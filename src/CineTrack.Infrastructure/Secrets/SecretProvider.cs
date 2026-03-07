@@ -26,4 +26,7 @@ public static class SecretProvider
 
     public static string GetRedisConnectionString() =>
         GetSecret("redis_connection_string");
+
+    public static string GetSmtpPassword() =>
+        GetSecret("smtp_password");
 }

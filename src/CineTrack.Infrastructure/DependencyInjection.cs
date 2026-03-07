@@ -3,6 +3,8 @@ using System.Text;
 using CineTrack.Application.Abstractions;
 using CineTrack.Infrastructure.Auth;
 using CineTrack.Infrastructure.Caching;
+using CineTrack.Infrastructure.Consumers;
+using CineTrack.Infrastructure.Email;
 using CineTrack.Infrastructure.Secrets;
 using CineTrack.Infrastructure.Tmdb;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -76,6 +78,17 @@ public static class DependencyInjection
             options.InstanceName = "CineTrack:";
         });
         services.AddSingleton<ICacheService, RedisCacheService>();
+
+        // Email (SMTP)
+        services.Configure<SmtpSettings>(smtpSettings =>
+        {
+            configuration.GetSection("Smtp").Bind(smtpSettings);
+            smtpSettings.Password = SecretProvider.GetSmtpPassword();
+        });
+        services.AddTransient<IEmailService, SmtpEmailService>();
+
+        // CAP Consumers
+        services.AddTransient<EmailConsumer>();
 
         // TMDb HttpClient + Polly
         services.AddHttpClient<ITmdbService, TmdbService>(client =>
