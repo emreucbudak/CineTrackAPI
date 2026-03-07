@@ -20,4 +20,10 @@ public static class SecretProvider
 
     public static string GetRabbitMqConnectionString() =>
         GetSecret("rabbitmq_connection_string");
+
+    public static string GetTmdbApiKey() =>
+        GetSecret("tmdb_api_key");
+
+    public static string GetRedisConnectionString() =>
+        GetSecret("redis_connection_string");
 }
