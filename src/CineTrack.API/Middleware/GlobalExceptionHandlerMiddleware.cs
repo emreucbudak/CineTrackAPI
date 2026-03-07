@@ -1,6 +1,7 @@
 using System.Net;
 using System.Text.Json;
 using CineTrack.API.Models;
+using FluentValidation;
 
 namespace CineTrack.API.Middleware;
 
@@ -35,6 +36,22 @@ public class GlobalExceptionHandlerMiddleware
 
     private static async Task HandleExceptionAsync(HttpContext context, Exception exception)
     {
+        if (exception is ValidationException validationException)
+        {
+            var errors = validationException.Errors
+                .Select(e => $"{e.PropertyName}: {e.ErrorMessage}");
+
+            var validationResponse = ApiResponse<object>.Fail(
+                "Validation.Failed",
+                string.Join("; ", errors),
+                (int)HttpStatusCode.BadRequest);
+
+            context.Response.ContentType = "application/json";
+            context.Response.StatusCode = (int)HttpStatusCode.BadRequest;
+            await context.Response.WriteAsync(JsonSerializer.Serialize(validationResponse, JsonOptions));
+            return;
+        }
+
         var (statusCode, errorCode) = exception switch
         {
             ArgumentNullException => (HttpStatusCode.BadRequest, "Argument.Null"),
