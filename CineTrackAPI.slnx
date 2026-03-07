@@ -1,0 +1,9 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/CineTrack.API/CineTrack.API.csproj" />
+    <Project Path="src/CineTrack.Application/CineTrack.Application.csproj" />
+    <Project Path="src/CineTrack.Domain/CineTrack.Domain.csproj" />
+    <Project Path="src/CineTrack.Infrastructure/CineTrack.Infrastructure.csproj" />
+    <Project Path="src/CineTrack.Persistence/CineTrack.Persistence.csproj" />
+  </Folder>
+</Solution>

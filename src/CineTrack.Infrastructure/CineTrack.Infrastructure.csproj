@@ -1,0 +1,20 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="..\CineTrack.Domain\CineTrack.Domain.csproj" />
+    <ProjectReference Include="..\CineTrack.Application\CineTrack.Application.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="DotNetCore.CAP.Dashboard" Version="10.0.1" />
+    <PackageReference Include="DotNetCore.CAP.PostgreSql" Version="10.0.1" />
+    <PackageReference Include="DotNetCore.CAP.RabbitMQ" Version="10.0.1" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+</Project>
