@@ -1,5 +1,8 @@
 using CineTrack.API.Middleware;
+using CineTrack.Application;
 using CineTrack.Infrastructure;
+using CineTrack.Infrastructure.Secrets;
+using CineTrack.Persistence;
 using Serilog;
 
 Log.Logger = new LoggerConfiguration()
@@ -22,7 +25,11 @@ try
     builder.Services.AddControllers();
     builder.Services.AddOpenApi();
 
-    builder.Services.AddInfrastructure();
+    var dbConnectionString = SecretProvider.GetDatabaseConnectionString();
+
+    builder.Services.AddApplication();
+    builder.Services.AddPersistence(dbConnectionString);
+    builder.Services.AddInfrastructure(builder.Configuration);
 
     var app = builder.Build();
 
@@ -36,6 +43,7 @@ try
     app.UseSerilogRequestLogging();
 
     app.UseHttpsRedirection();
+    app.UseAuthentication();
     app.UseAuthorization();
     app.MapControllers();
 
