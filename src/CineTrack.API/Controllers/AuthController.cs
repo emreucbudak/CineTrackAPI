@@ -1,13 +1,20 @@
+using Asp.Versioning;
 using CineTrack.API.Models;
 using CineTrack.Application.Features.Auth.Commands.Login;
+using CineTrack.Application.Features.Auth.Commands.RefreshToken;
 using CineTrack.Application.Features.Auth.Commands.Register;
+using CineTrack.Application.Features.Auth.Commands.RevokeToken;
 using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace CineTrack.API.Controllers;
 
 [ApiController]
-[Route("api/[controller]")]
+[ApiVersion("1.0")]
+[Route("api/v{version:apiVersion}/[controller]")]
+[EnableRateLimiting("auth")]
 public class AuthController : ControllerBase
 {
     private readonly ISender _sender;
@@ -37,5 +44,28 @@ public class AuthController : ControllerBase
             return Unauthorized(ApiResponse<object>.Fail(result.Error.Code, result.Error.Message, 401));
 
         return Ok(ApiResponse<object>.Ok(result.Value));
+    }
+
+    [HttpPost("refresh")]
+    public async Task<IActionResult> Refresh(RefreshTokenCommand command, CancellationToken cancellationToken)
+    {
+        var result = await _sender.Send(command, cancellationToken);
+
+        if (result.IsFailure)
+            return Unauthorized(ApiResponse<object>.Fail(result.Error.Code, result.Error.Message, 401));
+
+        return Ok(ApiResponse<object>.Ok(result.Value));
+    }
+
+    [HttpPost("revoke")]
+    [Authorize]
+    public async Task<IActionResult> Revoke(RevokeTokenCommand command, CancellationToken cancellationToken)
+    {
+        var result = await _sender.Send(command, cancellationToken);
+
+        if (result.IsFailure)
+            return BadRequest(ApiResponse<object>.Fail(result.Error.Code, result.Error.Message));
+
+        return NoContent();
     }
 }

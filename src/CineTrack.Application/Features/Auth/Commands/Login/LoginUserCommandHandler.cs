@@ -1,5 +1,6 @@
 using CineTrack.Application.Abstractions;
 using CineTrack.Application.DTOs;
+using CineTrack.Domain.Entities;
 using CineTrack.Domain.Shared;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
@@ -35,6 +36,18 @@ public class LoginUserCommandHandler : IRequestHandler<LoginUserCommand, Result<
 
         var (token, expiresAt) = _jwtProvider.GenerateToken(user);
 
-        return new AuthTokenDto(token, expiresAt);
+        var refreshToken = new Domain.Entities.RefreshToken
+        {
+            Id = Guid.NewGuid(),
+            UserId = user.Id,
+            Token = _jwtProvider.GenerateRefreshToken(),
+            ExpiresAt = DateTime.UtcNow.AddDays(7),
+            CreatedAt = DateTime.UtcNow
+        };
+
+        _db.RefreshTokens.Add(refreshToken);
+        await _db.SaveChangesAsync(cancellationToken);
+
+        return new AuthTokenDto(token, expiresAt, refreshToken.Token, refreshToken.ExpiresAt);
     }
 }
