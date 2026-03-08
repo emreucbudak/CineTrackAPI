@@ -1,8 +1,11 @@
 using System.Security.Claims;
+using Asp.Versioning;
 using CineTrack.API.Models;
 using CineTrack.Application.Features.Movies.Commands.AddFavorite;
 using CineTrack.Application.Features.Movies.Commands.RemoveFavorite;
+using CineTrack.Application.Features.Movies.Queries.GetDetail;
 using CineTrack.Application.Features.Movies.Queries.GetFavorites;
+using CineTrack.Application.Features.Movies.Queries.GetTrending;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -10,7 +13,8 @@ using Microsoft.AspNetCore.Mvc;
 namespace CineTrack.API.Controllers;
 
 [ApiController]
-[Route("api/[controller]")]
+[ApiVersion("1.0")]
+[Route("api/v{version:apiVersion}/[controller]")]
 [Authorize]
 public class MoviesController : ControllerBase
 {
@@ -24,10 +28,38 @@ public class MoviesController : ControllerBase
     private Guid GetUserId() =>
         Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
 
-    [HttpGet("favorites")]
-    public async Task<IActionResult> GetFavorites(CancellationToken cancellationToken)
+    [HttpGet("trending")]
+    [AllowAnonymous]
+    public async Task<IActionResult> GetTrending([FromQuery] string timeWindow = "day", CancellationToken cancellationToken = default)
     {
-        var result = await _sender.Send(new GetFavoriteMoviesQuery(GetUserId()), cancellationToken);
+        var result = await _sender.Send(new GetTrendingMoviesQuery(timeWindow), cancellationToken);
+
+        if (result.IsFailure)
+            return BadRequest(ApiResponse<object>.Fail(result.Error.Code, result.Error.Message));
+
+        return Ok(ApiResponse<object>.Ok(result.Value));
+    }
+
+    [HttpGet("{tmdbId:int}")]
+    [AllowAnonymous]
+    public async Task<IActionResult> GetDetail(int tmdbId, CancellationToken cancellationToken)
+    {
+        var result = await _sender.Send(new GetMovieDetailQuery(tmdbId), cancellationToken);
+
+        if (result.IsFailure)
+            return NotFound(ApiResponse<object>.Fail(result.Error.Code, result.Error.Message, 404));
+
+        return Ok(ApiResponse<object>.Ok(result.Value));
+    }
+
+    [HttpGet("favorites")]
+    public async Task<IActionResult> GetFavorites([FromQuery] int page = 1, [FromQuery] int pageSize = 20, CancellationToken cancellationToken = default)
+    {
+        var result = await _sender.Send(new GetFavoriteMoviesQuery(GetUserId(), page, pageSize), cancellationToken);
+
+        if (result.IsFailure)
+            return BadRequest(ApiResponse<object>.Fail(result.Error.Code, result.Error.Message));
+
         return Ok(ApiResponse<object>.Ok(result.Value));
     }
 

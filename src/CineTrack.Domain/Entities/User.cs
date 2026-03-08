@@ -9,4 +9,5 @@ public class User : BaseEntity
 
     public ICollection<FavoriteMovie> FavoriteMovies { get; set; } = [];
     public ICollection<FollowedActor> FollowedActors { get; set; } = [];
+    public ICollection<RefreshToken> RefreshTokens { get; set; } = [];
 }
