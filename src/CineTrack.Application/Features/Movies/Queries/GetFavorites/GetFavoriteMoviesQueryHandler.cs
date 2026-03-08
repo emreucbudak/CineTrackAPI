@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace CineTrack.Application.Features.Movies.Queries.GetFavorites;
 
-public class GetFavoriteMoviesQueryHandler : IRequestHandler<GetFavoriteMoviesQuery, Result<List<FavoriteMovieDto>>>
+public class GetFavoriteMoviesQueryHandler : IRequestHandler<GetFavoriteMoviesQuery, Result<PaginatedResult<FavoriteMovieDto>>>
 {
     private readonly IAppDbContext _db;
 
@@ -15,14 +15,21 @@ public class GetFavoriteMoviesQueryHandler : IRequestHandler<GetFavoriteMoviesQu
         _db = db;
     }
 
-    public async Task<Result<List<FavoriteMovieDto>>> Handle(GetFavoriteMoviesQuery request, CancellationToken cancellationToken)
+    public async Task<Result<PaginatedResult<FavoriteMovieDto>>> Handle(GetFavoriteMoviesQuery request, CancellationToken cancellationToken)
     {
-        var favorites = await _db.FavoriteMovies
+        var query = _db.FavoriteMovies
             .Where(f => f.UserId == request.UserId)
-            .OrderByDescending(f => f.AddedAt)
+            .OrderByDescending(f => f.AddedAt);
+
+        var totalCount = await query.CountAsync(cancellationToken);
+        var totalPages = (int)Math.Ceiling(totalCount / (double)request.PageSize);
+
+        var favorites = await query
+            .Skip((request.Page - 1) * request.PageSize)
+            .Take(request.PageSize)
             .Select(f => new FavoriteMovieDto(f.Id, f.TmdbId, f.Title, f.PosterPath, f.AddedAt))
             .ToListAsync(cancellationToken);
 
-        return favorites;
+        return new PaginatedResult<FavoriteMovieDto>(favorites, request.Page, request.PageSize, totalCount, totalPages);
     }
 }

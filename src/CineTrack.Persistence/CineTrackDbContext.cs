@@ -14,6 +14,7 @@ public class CineTrackDbContext : DbContext, IAppDbContext
     public DbSet<User> Users => Set<User>();
     public DbSet<FavoriteMovie> FavoriteMovies => Set<FavoriteMovie>();
     public DbSet<FollowedActor> FollowedActors => Set<FollowedActor>();
+    public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
