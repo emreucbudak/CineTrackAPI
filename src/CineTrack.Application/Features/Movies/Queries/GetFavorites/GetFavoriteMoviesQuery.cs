@@ -4,4 +4,5 @@ using MediatR;
 
 namespace CineTrack.Application.Features.Movies.Queries.GetFavorites;
 
-public record GetFavoriteMoviesQuery(Guid UserId) : IRequest<Result<List<FavoriteMovieDto>>>;
+public record GetFavoriteMoviesQuery(Guid UserId, int Page = 1, int PageSize = 20)
+    : IRequest<Result<PaginatedResult<FavoriteMovieDto>>>;
