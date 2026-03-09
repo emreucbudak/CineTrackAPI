@@ -5,6 +5,7 @@ using CineTrack.Application.Features.Movies.Commands.AddFavorite;
 using CineTrack.Application.Features.Movies.Commands.RemoveFavorite;
 using CineTrack.Application.Features.Movies.Queries.GetDetail;
 using CineTrack.Application.Features.Movies.Queries.GetFavorites;
+using CineTrack.Application.Features.Movies.Queries.Discover;
 using CineTrack.Application.Features.Movies.Queries.GetTrending;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
@@ -48,6 +49,18 @@ public class MoviesController : ControllerBase
 
         if (result.IsFailure)
             return NotFound(ApiResponse<object>.Fail(result.Error.Code, result.Error.Message, 404));
+
+        return Ok(ApiResponse<object>.Ok(result.Value));
+    }
+
+    [HttpGet("discover")]
+    [AllowAnonymous]
+    public async Task<IActionResult> Discover([FromQuery] int page = 1, CancellationToken cancellationToken = default)
+    {
+        var result = await _sender.Send(new DiscoverMoviesQuery(page), cancellationToken);
+
+        if (result.IsFailure)
+            return BadRequest(ApiResponse<object>.Fail(result.Error.Code, result.Error.Message));
 
         return Ok(ApiResponse<object>.Ok(result.Value));
     }

@@ -22,14 +22,28 @@ public class TmdbService : ITmdbService
     {
         try
         {
-            var response = await _httpClient.GetAsync($"movie/{tmdbId}", cancellationToken);
+            var movieTask = _httpClient.GetAsync($"movie/{tmdbId}", cancellationToken);
+            var creditsTask = _httpClient.GetAsync($"movie/{tmdbId}/credits", cancellationToken);
 
-            if (response.StatusCode == HttpStatusCode.NotFound)
+            await Task.WhenAll(movieTask, creditsTask);
+
+            var movieResponse = movieTask.Result;
+            var creditsResponse = creditsTask.Result;
+
+            if (movieResponse.StatusCode == System.Net.HttpStatusCode.NotFound)
                 return Result.Failure<MovieDetailDto>(Error.NotFound("Movie", tmdbId));
 
-            response.EnsureSuccessStatusCode();
+            movieResponse.EnsureSuccessStatusCode();
+            creditsResponse.EnsureSuccessStatusCode();
 
-            var movie = await response.Content.ReadFromJsonAsync<TmdbMovieResponse>(cancellationToken);
+            var movie = await movieResponse.Content.ReadFromJsonAsync<TmdbMovieResponse>(cancellationToken);
+            var credits = await creditsResponse.Content.ReadFromJsonAsync<TmdbCreditsResponse>(cancellationToken);
+
+            var cast = credits!.Cast
+                .OrderBy(c => c.Order)
+                .Take(20)
+                .Select(c => new CastMemberDto(c.Id, c.Name, c.Character, c.ProfilePath, c.Order))
+                .ToList();
 
             return new MovieDetailDto(
                 movie!.Id,
@@ -40,7 +54,8 @@ public class TmdbService : ITmdbService
                 movie.ReleaseDate,
                 movie.VoteAverage,
                 movie.VoteCount,
-                movie.Genres.Select(g => new GenreDto(g.Id, g.Name)).ToList());
+                movie.Genres.Select(g => new GenreDto(g.Id, g.Name)).ToList(),
+                cast);
         }
         catch (HttpRequestException ex)
         {
@@ -74,14 +89,29 @@ public class TmdbService : ITmdbService
     {
         try
         {
-            var response = await _httpClient.GetAsync($"person/{personId}", cancellationToken);
+            var personTask = _httpClient.GetAsync($"person/{personId}", cancellationToken);
+            var creditsTask = _httpClient.GetAsync($"person/{personId}/movie_credits", cancellationToken);
 
-            if (response.StatusCode == HttpStatusCode.NotFound)
+            await Task.WhenAll(personTask, creditsTask);
+
+            var personResponse = personTask.Result;
+            var creditsResponse = creditsTask.Result;
+
+            if (personResponse.StatusCode == System.Net.HttpStatusCode.NotFound)
                 return Result.Failure<PersonDetailDto>(Error.NotFound("Person", personId));
 
-            response.EnsureSuccessStatusCode();
+            personResponse.EnsureSuccessStatusCode();
+            creditsResponse.EnsureSuccessStatusCode();
 
-            var person = await response.Content.ReadFromJsonAsync<TmdbPersonResponse>(cancellationToken);
+            var person = await personResponse.Content.ReadFromJsonAsync<TmdbPersonResponse>(cancellationToken);
+            var credits = await creditsResponse.Content.ReadFromJsonAsync<TmdbPersonCreditsResponse>(cancellationToken);
+
+            var movieCredits = credits!.Cast
+                .Where(c => !string.IsNullOrEmpty(c.Title))
+                .OrderByDescending(c => c.ReleaseDate ?? "")
+                .Take(50)
+                .Select(c => new MovieCreditDto(c.Id, c.Title, c.Character, c.PosterPath, c.ReleaseDate, c.VoteAverage))
+                .ToList();
 
             return new PersonDetailDto(
                 person!.Id,
@@ -90,12 +120,36 @@ public class TmdbService : ITmdbService
                 person.ProfilePath,
                 person.Birthday,
                 person.PlaceOfBirth,
-                person.KnownForDepartment);
+                person.KnownForDepartment,
+                movieCredits);
         }
         catch (HttpRequestException ex)
         {
             _logger.LogError(ex, "TMDb API error fetching person {PersonId}", personId);
             return Result.Failure<PersonDetailDto>(Error.Failure("Tmdb.RequestFailed", "Failed to fetch person from TMDb."));
+        }
+    }
+
+    public async Task<Result<List<DiscoverMovieDto>>> DiscoverMoviesAsync(int page = 1, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var response = await _httpClient.GetAsync(
+                $"discover/movie?sort_by=popularity.desc&include_adult=false&vote_count.gte=100&page={page}",
+                cancellationToken);
+            response.EnsureSuccessStatusCode();
+
+            var discover = await response.Content.ReadFromJsonAsync<TmdbDiscoverResponse>(cancellationToken);
+
+            var movies = discover!.Results.Select(m => new DiscoverMovieDto(
+                m.Id, m.Title, m.Overview, m.PosterPath, m.ReleaseDate, m.VoteAverage)).ToList();
+
+            return movies;
+        }
+        catch (HttpRequestException ex)
+        {
+            _logger.LogError(ex, "TMDb API error fetching discover movies");
+            return Result.Failure<List<DiscoverMovieDto>>(Error.Failure("Tmdb.RequestFailed", "Failed to fetch discover movies from TMDb."));
         }
     }
 }
