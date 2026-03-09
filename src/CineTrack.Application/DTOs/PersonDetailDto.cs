@@ -7,4 +7,5 @@ public record PersonDetailDto(
     string? ProfilePath,
     string? Birthday,
     string? PlaceOfBirth,
-    string? KnownForDepartment);
+    string? KnownForDepartment,
+    List<MovieCreditDto> MovieCredits);

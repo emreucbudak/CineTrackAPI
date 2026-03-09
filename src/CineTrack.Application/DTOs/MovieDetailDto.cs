@@ -9,6 +9,7 @@ public record MovieDetailDto(
     string? ReleaseDate,
     double VoteAverage,
     int VoteCount,
-    List<GenreDto> Genres);
+    List<GenreDto> Genres,
+    List<CastMemberDto> Cast);
 
 public record GenreDto(int Id, string Name);
