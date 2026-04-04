@@ -97,6 +97,7 @@ try
     var app = builder.Build();
 
     app.UseMiddleware<GlobalExceptionHandlerMiddleware>();
+    app.UseMiddleware<SecurityHeadersMiddleware>();
 
     app.MapOpenApi();
     app.MapScalarApiReference(options =>

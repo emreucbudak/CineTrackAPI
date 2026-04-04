@@ -1,4 +1,3 @@
-using System.Security.Claims;
 using Asp.Versioning;
 using CineTrack.API.Models;
 using CineTrack.Application.Features.Actors.Commands.Follow;
@@ -11,11 +10,10 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace CineTrack.API.Controllers;
 
-[ApiController]
 [ApiVersion("1.0")]
 [Route("api/v{version:apiVersion}/[controller]")]
 [Authorize]
-public class ActorsController : ControllerBase
+public class ActorsController : BaseApiController
 {
     private readonly ISender _sender;
 
@@ -23,9 +21,6 @@ public class ActorsController : ControllerBase
     {
         _sender = sender;
     }
-
-    private Guid GetUserId() =>
-        Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
 
     [HttpGet("{personId:int}")]
     [AllowAnonymous]

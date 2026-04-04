@@ -1,4 +1,3 @@
-using System.Security.Claims;
 using Asp.Versioning;
 using CineTrack.API.Models;
 using CineTrack.Application.Features.Movies.Commands.AddFavorite;
@@ -13,11 +12,10 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace CineTrack.API.Controllers;
 
-[ApiController]
 [ApiVersion("1.0")]
 [Route("api/v{version:apiVersion}/[controller]")]
 [Authorize]
-public class MoviesController : ControllerBase
+public class MoviesController : BaseApiController
 {
     private readonly ISender _sender;
 
@@ -25,9 +23,6 @@ public class MoviesController : ControllerBase
     {
         _sender = sender;
     }
-
-    private Guid GetUserId() =>
-        Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
 
     [HttpGet("trending")]
     [AllowAnonymous]
