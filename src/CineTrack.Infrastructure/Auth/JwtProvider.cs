@@ -33,8 +33,8 @@ public class JwtProvider : IJwtProvider
 
         var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
-        var expiresAt = DateTime.UtcNow.AddHours(
-            double.Parse(_configuration["Jwt:ExpirationInHours"] ?? "24"));
+        var expiresAt = DateTime.UtcNow.AddMinutes(
+            double.Parse(_configuration["Jwt:ExpirationInMinutes"] ?? "30"));
 
         var token = new JwtSecurityToken(
             issuer: _configuration["Jwt:Issuer"],

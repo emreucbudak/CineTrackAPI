@@ -54,7 +54,7 @@ public class RefreshTokenCommandHandler : IRequestHandler<RefreshTokenCommand, R
             Id = Guid.NewGuid(),
             UserId = user.Id,
             Token = _jwtProvider.GenerateRefreshToken(),
-            ExpiresAt = DateTime.UtcNow.AddDays(7),
+            ExpiresAt = DateTime.UtcNow.AddDays(1),
             CreatedAt = DateTime.UtcNow
         };
 
