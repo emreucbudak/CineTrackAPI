@@ -41,7 +41,7 @@ public class LoginUserCommandHandler : IRequestHandler<LoginUserCommand, Result<
             Id = Guid.NewGuid(),
             UserId = user.Id,
             Token = _jwtProvider.GenerateRefreshToken(),
-            ExpiresAt = DateTime.UtcNow.AddDays(7),
+            ExpiresAt = DateTime.UtcNow.AddDays(1),
             CreatedAt = DateTime.UtcNow
         };
 
