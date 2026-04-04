@@ -29,7 +29,9 @@ public class GlobalExceptionHandlerMiddleware
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Unhandled exception occurred. TraceId: {TraceId}", context.TraceIdentifier);
+            var userId = context.User?.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value ?? "anonymous";
+            _logger.LogError(ex, "Unhandled exception occurred. TraceId: {TraceId}, UserId: {UserId}, Path: {Path}",
+                context.TraceIdentifier, userId, context.Request.Path);
             await HandleExceptionAsync(context, ex);
         }
     }
@@ -61,9 +63,13 @@ public class GlobalExceptionHandlerMiddleware
             _ => (HttpStatusCode.InternalServerError, "Server.InternalError")
         };
 
+        var message = statusCode == HttpStatusCode.InternalServerError
+            ? "An unexpected error occurred. Please try again later."
+            : exception.Message;
+
         var response = ApiResponse<object>.Fail(
             errorCode,
-            exception.Message,
+            message,
             (int)statusCode);
 
         context.Response.ContentType = "application/json";

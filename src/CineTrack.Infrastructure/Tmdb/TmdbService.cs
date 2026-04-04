@@ -27,8 +27,8 @@ public class TmdbService : ITmdbService
 
             await Task.WhenAll(movieTask, creditsTask);
 
-            var movieResponse = movieTask.Result;
-            var creditsResponse = creditsTask.Result;
+            var movieResponse = await movieTask;
+            var creditsResponse = await creditsTask;
 
             if (movieResponse.StatusCode == System.Net.HttpStatusCode.NotFound)
                 return Result.Failure<MovieDetailDto>(Error.NotFound("Movie", tmdbId));
@@ -94,8 +94,8 @@ public class TmdbService : ITmdbService
 
             await Task.WhenAll(personTask, creditsTask);
 
-            var personResponse = personTask.Result;
-            var creditsResponse = creditsTask.Result;
+            var personResponse = await personTask;
+            var creditsResponse = await creditsTask;
 
             if (personResponse.StatusCode == System.Net.HttpStatusCode.NotFound)
                 return Result.Failure<PersonDetailDto>(Error.NotFound("Person", personId));

@@ -1,10 +1,13 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
+using System.Text;
 using CineTrack.Application.Abstractions;
 using CineTrack.Application.DTOs;
 using CineTrack.Domain.Shared;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
+using Microsoft.IdentityModel.Tokens;
 
 namespace CineTrack.Application.Features.Auth.Commands.RefreshToken;
 
@@ -12,22 +15,43 @@ public class RefreshTokenCommandHandler : IRequestHandler<RefreshTokenCommand, R
 {
     private readonly IAppDbContext _db;
     private readonly IJwtProvider _jwtProvider;
+    private readonly IConfiguration _configuration;
 
-    public RefreshTokenCommandHandler(IAppDbContext db, IJwtProvider jwtProvider)
+    public RefreshTokenCommandHandler(IAppDbContext db, IJwtProvider jwtProvider, IConfiguration configuration)
     {
         _db = db;
         _jwtProvider = jwtProvider;
+        _configuration = configuration;
     }
 
     public async Task<Result<AuthTokenDto>> Handle(RefreshTokenCommand request, CancellationToken cancellationToken)
     {
-        // Extract user ID from expired JWT (without validating lifetime)
+        // Validate JWT signature (allow expired tokens)
         var handler = new JwtSecurityTokenHandler();
-        if (!handler.CanReadToken(request.Token))
-            return Result.Failure<AuthTokenDto>(Error.Validation("Auth.InvalidToken", "Invalid token."));
+        var validationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = true,
+            ValidateAudience = true,
+            ValidateLifetime = false, // Allow expired tokens for refresh
+            ValidateIssuerSigningKey = true,
+            ValidIssuer = _configuration["Jwt:Issuer"],
+            ValidAudience = _configuration["Jwt:Audience"],
+            IssuerSigningKey = new SymmetricSecurityKey(
+                Encoding.UTF8.GetBytes(_configuration["Jwt:Secret"]!))
+        };
 
-        var jwtToken = handler.ReadJwtToken(request.Token);
-        var userIdClaim = jwtToken.Claims.FirstOrDefault(c => c.Type == JwtRegisteredClaimNames.Sub)?.Value;
+        ClaimsPrincipal principal;
+        try
+        {
+            principal = handler.ValidateToken(request.Token, validationParameters, out _);
+        }
+        catch (SecurityTokenException)
+        {
+            return Result.Failure<AuthTokenDto>(Error.Validation("Auth.InvalidToken", "Invalid or tampered token."));
+        }
+
+        var userIdClaim = principal.FindFirst(JwtRegisteredClaimNames.Sub)?.Value
+                          ?? principal.FindFirst(ClaimTypes.NameIdentifier)?.Value;
 
         if (userIdClaim is null || !Guid.TryParse(userIdClaim, out var userId))
             return Result.Failure<AuthTokenDto>(Error.Validation("Auth.InvalidToken", "Invalid token."));
