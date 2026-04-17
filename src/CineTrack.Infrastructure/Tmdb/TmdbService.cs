@@ -4,6 +4,7 @@ using CineTrack.Application.Abstractions;
 using CineTrack.Application.DTOs;
 using CineTrack.Domain.Shared;
 using Microsoft.Extensions.Logging;
+using CineTrack.Infrastructure.Secrets;
 
 namespace CineTrack.Infrastructure.Tmdb;
 
@@ -11,19 +12,21 @@ public class TmdbService : ITmdbService
 {
     private readonly HttpClient _httpClient;
     private readonly ILogger<TmdbService> _logger;
+    private readonly string _apiKey;
 
     public TmdbService(HttpClient httpClient, ILogger<TmdbService> logger)
     {
         _httpClient = httpClient;
         _logger = logger;
+        _apiKey = SecretProvider.GetTmdbApiKey();
     }
 
     public async Task<Result<MovieDetailDto>> GetMovieDetailAsync(int tmdbId, CancellationToken cancellationToken = default)
     {
         try
         {
-            var movieTask = _httpClient.GetAsync($"movie/{tmdbId}", cancellationToken);
-            var creditsTask = _httpClient.GetAsync($"movie/{tmdbId}/credits", cancellationToken);
+            var movieTask = _httpClient.GetAsync(BuildUrl($"movie/{tmdbId}"), cancellationToken);
+            var creditsTask = _httpClient.GetAsync(BuildUrl($"movie/{tmdbId}/credits"), cancellationToken);
 
             await Task.WhenAll(movieTask, creditsTask);
 
@@ -68,7 +71,7 @@ public class TmdbService : ITmdbService
     {
         try
         {
-            var response = await _httpClient.GetAsync($"trending/movie/{timeWindow}", cancellationToken);
+            var response = await _httpClient.GetAsync(BuildUrl($"trending/movie/{timeWindow}"), cancellationToken);
             response.EnsureSuccessStatusCode();
 
             var trending = await response.Content.ReadFromJsonAsync<TmdbTrendingResponse>(cancellationToken);
@@ -89,8 +92,8 @@ public class TmdbService : ITmdbService
     {
         try
         {
-            var personTask = _httpClient.GetAsync($"person/{personId}", cancellationToken);
-            var creditsTask = _httpClient.GetAsync($"person/{personId}/movie_credits", cancellationToken);
+            var personTask = _httpClient.GetAsync(BuildUrl($"person/{personId}"), cancellationToken);
+            var creditsTask = _httpClient.GetAsync(BuildUrl($"person/{personId}/movie_credits"), cancellationToken);
 
             await Task.WhenAll(personTask, creditsTask);
 
@@ -135,7 +138,7 @@ public class TmdbService : ITmdbService
         try
         {
             var response = await _httpClient.GetAsync(
-                $"discover/movie?sort_by=popularity.desc&include_adult=false&vote_count.gte=100&page={page}",
+                BuildUrl($"discover/movie?sort_by=popularity.desc&include_adult=false&vote_count.gte=100&page={page}"),
                 cancellationToken);
             response.EnsureSuccessStatusCode();
 
@@ -151,5 +154,11 @@ public class TmdbService : ITmdbService
             _logger.LogError(ex, "TMDb API error fetching discover movies");
             return Result.Failure<List<DiscoverMovieDto>>(Error.Failure("Tmdb.RequestFailed", "Failed to fetch discover movies from TMDb."));
         }
+    }
+
+    private string BuildUrl(string path)
+    {
+        var separator = path.Contains('?') ? "&" : "?";
+        return $"{path}{separator}api_key={Uri.EscapeDataString(_apiKey)}";
     }
 }

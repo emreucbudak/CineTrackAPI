@@ -1,4 +1,5 @@
 using CineTrack.Application.Abstractions;
+using CineTrack.Domain.Shared;
 using MediatR;
 using Microsoft.Extensions.Logging;
 
@@ -33,6 +34,12 @@ public class CacheableBehavior<TRequest, TResponse> : IPipelineBehavior<TRequest
         _logger.LogInformation("Cache miss for {CacheKey}", cacheKey);
 
         var response = await next(cancellationToken);
+
+        if (response is Result result && result.IsFailure)
+        {
+            _logger.LogInformation("Skipping cache for failed response on {CacheKey}", cacheKey);
+            return response;
+        }
 
         await _cache.SetAsync(cacheKey, response, request.CacheDuration, cancellationToken);
 

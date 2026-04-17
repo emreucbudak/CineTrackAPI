@@ -20,12 +20,7 @@ RUN dotnet publish src/CineTrack.API/CineTrack.API.csproj -c Release -o /app/pub
 FROM mcr.microsoft.com/dotnet/aspnet:10.0-preview AS runtime
 WORKDIR /app
 
-RUN addgroup --system appgroup && adduser --system --ingroup appgroup appuser
-
 COPY --from=build /app/publish .
-
-RUN chown -R appuser:appgroup /app
-USER appuser
 
 EXPOSE 8080
 ENV ASPNETCORE_URLS=http://+:8080

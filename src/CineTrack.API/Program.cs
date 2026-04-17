@@ -8,6 +8,7 @@ using CineTrack.Persistence;
 using HealthChecks.UI.Client;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.RateLimiting;
+using Microsoft.EntityFrameworkCore;
 using Scalar.AspNetCore;
 using Serilog;
 
@@ -95,6 +96,12 @@ try
     builder.Services.AddInfrastructure(builder.Configuration);
 
     var app = builder.Build();
+
+    using (var scope = app.Services.CreateScope())
+    {
+        var dbContext = scope.ServiceProvider.GetRequiredService<CineTrackDbContext>();
+        dbContext.Database.Migrate();
+    }
 
     app.UseMiddleware<GlobalExceptionHandlerMiddleware>();
     app.UseMiddleware<SecurityHeadersMiddleware>();

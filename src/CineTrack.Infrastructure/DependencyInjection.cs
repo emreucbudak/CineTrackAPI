@@ -22,8 +22,6 @@ public static class DependencyInjection
     {
         var dbConnectionString = SecretProvider.GetDatabaseConnectionString();
         var rabbitMqConnectionString = SecretProvider.GetRabbitMqConnectionString();
-        var tmdbApiKey = SecretProvider.GetTmdbApiKey();
-
         // CAP (Outbox + RabbitMQ)
         services.AddCap(options =>
         {
@@ -95,7 +93,6 @@ public static class DependencyInjection
         {
             client.BaseAddress = new Uri("https://api.themoviedb.org/3/");
             client.DefaultRequestHeaders.Add("Accept", "application/json");
-            client.DefaultRequestHeaders.Add("Authorization", $"Bearer {tmdbApiKey}");
         })
         .AddPolicyHandler(GetRetryPolicy())
         .AddPolicyHandler(GetCircuitBreakerPolicy());
