@@ -1,4 +1,3 @@
-using CineTrack.Application.Abstractions;
 using CineTrack.Application.DTOs;
 using CineTrack.Domain.Shared;
 using MediatR;
@@ -6,4 +5,4 @@ using MediatR;
 namespace CineTrack.Application.Features.Auth.Commands.Register;
 
 public record RegisterUserCommand(string Email, string Username, string Password)
-    : IRequest<Result<UserDto>>, ITransactionalCommand;
+    : IRequest<Result<PendingVerificationDto>>;

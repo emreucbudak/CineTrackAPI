@@ -1,63 +1,89 @@
 using CineTrack.Application.Abstractions;
 using CineTrack.Application.DTOs;
-using CineTrack.Application.Events;
-using CineTrack.Domain.Entities;
 using CineTrack.Domain.Shared;
-using DotNetCore.CAP;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 
 namespace CineTrack.Application.Features.Auth.Commands.Register;
 
-public class RegisterUserCommandHandler : IRequestHandler<RegisterUserCommand, Result<UserDto>>
+public class RegisterUserCommandHandler : IRequestHandler<RegisterUserCommand, Result<PendingVerificationDto>>
 {
     private readonly IAppDbContext _db;
-    private readonly ICapPublisher _capPublisher;
+    private readonly ICacheService _cache;
+    private readonly IEmailService _emailService;
+    private readonly IJwtProvider _jwtProvider;
     private readonly IPasswordHasher _passwordHasher;
 
     public RegisterUserCommandHandler(
         IAppDbContext db,
-        ICapPublisher capPublisher,
+        ICacheService cache,
+        IEmailService emailService,
+        IJwtProvider jwtProvider,
         IPasswordHasher passwordHasher)
     {
         _db = db;
-        _capPublisher = capPublisher;
+        _cache = cache;
+        _emailService = emailService;
+        _jwtProvider = jwtProvider;
         _passwordHasher = passwordHasher;
     }
 
-    public async Task<Result<UserDto>> Handle(RegisterUserCommand request, CancellationToken cancellationToken)
+    public async Task<Result<PendingVerificationDto>> Handle(RegisterUserCommand request, CancellationToken cancellationToken)
     {
+        var normalizedEmail = request.Email.Trim();
+        var normalizedUsername = request.Username.Trim();
+
         var emailExists = await _db.Users
-            .AnyAsync(u => u.Email == request.Email, cancellationToken);
+            .AnyAsync(u => u.Email == normalizedEmail, cancellationToken);
 
         if (emailExists)
-            return Result.Failure<UserDto>(Error.Conflict("User.EmailExists", "A user with this email already exists."));
+            return Result.Failure<PendingVerificationDto>(Error.Conflict("User.EmailExists", "A user with this email already exists."));
 
         var usernameExists = await _db.Users
-            .AnyAsync(u => u.Username == request.Username, cancellationToken);
+            .AnyAsync(u => u.Username == normalizedUsername, cancellationToken);
 
         if (usernameExists)
-            return Result.Failure<UserDto>(Error.Conflict("User.UsernameExists", "A user with this username already exists."));
+            return Result.Failure<PendingVerificationDto>(Error.Conflict("User.UsernameExists", "A user with this username already exists."));
 
-        var user = new User
+        var expiresAtUtc = DateTime.UtcNow.Add(RegisterVerificationSupport.VerificationLifetime);
+        var (temporaryToken, _) = RegisterVerificationSupport.GenerateTemporaryToken(
+            _jwtProvider,
+            normalizedEmail,
+            expiresAtUtc);
+        var verificationCode = RegisterVerificationSupport.GenerateVerificationCode();
+        var passwordHash = _passwordHasher.Hash(request.Password);
+        var cacheKey = RegisterVerificationSupport.GetCacheKey(temporaryToken);
+
+        var cacheEntry = new RegisterVerificationCacheEntry
         {
-            Id = Guid.NewGuid(),
-            Email = request.Email,
-            Username = request.Username,
-            PasswordHash = _passwordHasher.Hash(request.Password),
-            CreatedAt = DateTime.UtcNow
+            Email = normalizedEmail,
+            Username = normalizedUsername,
+            PasswordHash = passwordHash,
+            VerificationCode = verificationCode,
+            ExpiresAtUtc = expiresAtUtc,
+            RemainingAttempts = RegisterVerificationSupport.MaxVerificationAttempts
         };
 
-        _db.Users.Add(user);
-
-        // CAP outbox: DB save + event publish in the same transaction
-        await _capPublisher.PublishAsync(
-            EventNames.UserRegistered,
-            new UserRegisteredEvent(user.Id, user.Email, user.Username, user.CreatedAt),
+        await _cache.SetAsync(
+            cacheKey,
+            cacheEntry,
+            RegisterVerificationSupport.VerificationLifetime,
             cancellationToken: cancellationToken);
 
-        await _db.SaveChangesAsync(cancellationToken);
+        try
+        {
+            await _emailService.SendAsync(
+                normalizedEmail,
+                "CineTrack registration verification code",
+                RegisterVerificationSupport.BuildEmailBody(normalizedUsername, verificationCode, RegisterVerificationSupport.VerificationLifetime),
+                cancellationToken);
+        }
+        catch
+        {
+            await _cache.RemoveAsync(cacheKey, cancellationToken);
+            throw;
+        }
 
-        return new UserDto(user.Id, user.Email, user.Username, user.CreatedAt);
+        return new PendingVerificationDto(temporaryToken, expiresAtUtc, normalizedEmail);
     }
 }

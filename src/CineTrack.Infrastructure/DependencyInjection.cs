@@ -1,6 +1,7 @@
 using System.Net;
 using System.Text;
 using CineTrack.Application.Abstractions;
+using CineTrack.Application.Features.Auth.Common;
 using CineTrack.Infrastructure.Auth;
 using CineTrack.Infrastructure.Caching;
 using CineTrack.Infrastructure.Consumers;
@@ -63,6 +64,22 @@ public static class DependencyInjection
                     ValidAudience = configuration["Jwt:Audience"],
                     IssuerSigningKey = new SymmetricSecurityKey(
                         Encoding.UTF8.GetBytes(configuration["Jwt:Secret"]!))
+                };
+
+                options.Events = new JwtBearerEvents
+                {
+                    OnTokenValidated = context =>
+                    {
+                        var tokenType = context.Principal?.FindFirst(AuthTokenClaimNames.TokenType)?.Value;
+
+                        if (!string.IsNullOrWhiteSpace(tokenType) &&
+                            !string.Equals(tokenType, AuthTokenTypes.Access, StringComparison.Ordinal))
+                        {
+                            context.Fail("Only access tokens can be used for bearer authentication.");
+                        }
+
+                        return Task.CompletedTask;
+                    }
                 };
             });
 
