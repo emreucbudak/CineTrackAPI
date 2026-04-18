@@ -88,6 +88,30 @@ public class TmdbService : ITmdbService
         }
     }
 
+    public async Task<Result<List<TrendingMovieDto>>> SearchMoviesAsync(string query, int page = 1, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var encodedQuery = Uri.EscapeDataString(query);
+            var response = await _httpClient.GetAsync(
+                BuildUrl($"search/movie?query={encodedQuery}&include_adult=false&page={page}"),
+                cancellationToken);
+            response.EnsureSuccessStatusCode();
+
+            var search = await response.Content.ReadFromJsonAsync<TmdbDiscoverResponse>(cancellationToken);
+
+            var movies = search!.Results.Select(m => new TrendingMovieDto(
+                m.Id, m.Title, m.Overview, m.PosterPath, m.ReleaseDate, m.VoteAverage)).ToList();
+
+            return movies;
+        }
+        catch (HttpRequestException ex)
+        {
+            _logger.LogError(ex, "TMDb API error searching movies for query {Query}", query);
+            return Result.Failure<List<TrendingMovieDto>>(Error.Failure("Tmdb.RequestFailed", "Failed to search movies from TMDb."));
+        }
+    }
+
     public async Task<Result<PersonDetailDto>> GetPersonDetailAsync(int personId, CancellationToken cancellationToken = default)
     {
         try
@@ -130,6 +154,33 @@ public class TmdbService : ITmdbService
         {
             _logger.LogError(ex, "TMDb API error fetching person {PersonId}", personId);
             return Result.Failure<PersonDetailDto>(Error.Failure("Tmdb.RequestFailed", "Failed to fetch person from TMDb."));
+        }
+    }
+
+    public async Task<Result<List<SearchPersonDto>>> SearchPeopleAsync(string query, int page = 1, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var encodedQuery = Uri.EscapeDataString(query);
+            var response = await _httpClient.GetAsync(
+                BuildUrl($"search/person?query={encodedQuery}&include_adult=false&page={page}"),
+                cancellationToken);
+            response.EnsureSuccessStatusCode();
+
+            var search = await response.Content.ReadFromJsonAsync<TmdbSearchPeopleResponse>(cancellationToken);
+
+            var people = search!.Results.Select(person => new SearchPersonDto(
+                person.Id,
+                person.Name,
+                person.ProfilePath,
+                person.KnownForDepartment)).ToList();
+
+            return people;
+        }
+        catch (HttpRequestException ex)
+        {
+            _logger.LogError(ex, "TMDb API error searching people for query {Query}", query);
+            return Result.Failure<List<SearchPersonDto>>(Error.Failure("Tmdb.RequestFailed", "Failed to search people from TMDb."));
         }
     }
 

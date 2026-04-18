@@ -172,3 +172,24 @@ internal class TmdbDiscoverMovie
     [JsonPropertyName("vote_average")]
     public double VoteAverage { get; set; }
 }
+
+internal class TmdbSearchPeopleResponse
+{
+    [JsonPropertyName("results")]
+    public List<TmdbSearchPerson> Results { get; set; } = [];
+}
+
+internal class TmdbSearchPerson
+{
+    [JsonPropertyName("id")]
+    public int Id { get; set; }
+
+    [JsonPropertyName("name")]
+    public string Name { get; set; } = string.Empty;
+
+    [JsonPropertyName("profile_path")]
+    public string? ProfilePath { get; set; }
+
+    [JsonPropertyName("known_for_department")]
+    public string? KnownForDepartment { get; set; }
+}

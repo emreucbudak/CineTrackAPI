@@ -7,6 +7,8 @@ public interface ITmdbService
 {
     Task<Result<MovieDetailDto>> GetMovieDetailAsync(int tmdbId, CancellationToken cancellationToken = default);
     Task<Result<List<TrendingMovieDto>>> GetTrendingMoviesAsync(string timeWindow = "day", CancellationToken cancellationToken = default);
+    Task<Result<List<TrendingMovieDto>>> SearchMoviesAsync(string query, int page = 1, CancellationToken cancellationToken = default);
     Task<Result<PersonDetailDto>> GetPersonDetailAsync(int personId, CancellationToken cancellationToken = default);
+    Task<Result<List<SearchPersonDto>>> SearchPeopleAsync(string query, int page = 1, CancellationToken cancellationToken = default);
     Task<Result<List<DiscoverMovieDto>>> DiscoverMoviesAsync(int page = 1, CancellationToken cancellationToken = default);
 }

@@ -4,6 +4,7 @@ using CineTrack.Application.Features.Actors.Commands.Follow;
 using CineTrack.Application.Features.Actors.Commands.Unfollow;
 using CineTrack.Application.Features.Actors.Queries.GetDetail;
 using CineTrack.Application.Features.Actors.Queries.GetFollowed;
+using CineTrack.Application.Features.Actors.Queries.Search;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -30,6 +31,18 @@ public class ActorsController : BaseApiController
 
         if (result.IsFailure)
             return NotFound(ApiResponse<object>.Fail(result.Error.Code, result.Error.Message, 404));
+
+        return Ok(ApiResponse<object>.Ok(result.Value));
+    }
+
+    [HttpGet("search")]
+    [AllowAnonymous]
+    public async Task<IActionResult> Search([FromQuery] string query, [FromQuery] int page = 1, CancellationToken cancellationToken = default)
+    {
+        var result = await _sender.Send(new SearchActorsQuery(query, page), cancellationToken);
+
+        if (result.IsFailure)
+            return BadRequest(ApiResponse<object>.Fail(result.Error.Code, result.Error.Message));
 
         return Ok(ApiResponse<object>.Ok(result.Value));
     }
