@@ -4,5 +4,5 @@ using MediatR;
 
 namespace CineTrack.Application.Features.Auth.Commands.ForgotPassword;
 
-public record ForgotPasswordCommand(string Email, string NewPassword)
+public record ForgotPasswordCommand(string Email)
     : IRequest<Result<PendingVerificationDto>>;

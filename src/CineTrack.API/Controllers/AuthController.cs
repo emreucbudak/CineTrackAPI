@@ -4,6 +4,7 @@ using CineTrack.Application.Features.Auth.Commands.ForgotPassword;
 using CineTrack.Application.Features.Auth.Commands.Login;
 using CineTrack.Application.Features.Auth.Commands.RefreshToken;
 using CineTrack.Application.Features.Auth.Commands.Register;
+using CineTrack.Application.Features.Auth.Commands.ResetForgotPassword;
 using CineTrack.Application.Features.Auth.Commands.RevokeToken;
 using CineTrack.Application.Features.Auth.Commands.VerifyForgotPassword;
 using CineTrack.Application.Features.Auth.Commands.VerifyLogin;
@@ -85,6 +86,20 @@ public class AuthController : ControllerBase
 
     [HttpPost("forgot-password/verify")]
     public async Task<IActionResult> VerifyForgotPassword([FromBody] VerifyForgotPasswordCommand command, CancellationToken cancellationToken)
+    {
+        var result = await _sender.Send(command, cancellationToken);
+
+        if (result.IsFailure)
+            return BadRequest(ApiResponse<object>.Fail(result.Error.Code, result.Error.Message));
+
+        return Ok(ApiResponse<object>.Ok(new
+        {
+            message = "Password reset code verified successfully."
+        }));
+    }
+
+    [HttpPost("forgot-password/reset")]
+    public async Task<IActionResult> ResetForgotPassword([FromBody] ResetForgotPasswordCommand command, CancellationToken cancellationToken)
     {
         var result = await _sender.Send(command, cancellationToken);
 

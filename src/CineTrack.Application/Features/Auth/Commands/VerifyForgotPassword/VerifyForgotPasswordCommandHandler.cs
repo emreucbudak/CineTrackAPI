@@ -1,26 +1,22 @@
 using System.Security.Cryptography;
 using System.Text;
 using CineTrack.Application.Abstractions;
-using CineTrack.Application.Features.Auth.Common;
 using CineTrack.Application.Features.Auth.Commands.ForgotPassword;
+using CineTrack.Application.Features.Auth.Common;
 using CineTrack.Domain.Shared;
 using MediatR;
-using Microsoft.EntityFrameworkCore;
 
 namespace CineTrack.Application.Features.Auth.Commands.VerifyForgotPassword;
 
 public class VerifyForgotPasswordCommandHandler : IRequestHandler<VerifyForgotPasswordCommand, Result>
 {
-    private readonly IAppDbContext _db;
     private readonly ICacheService _cache;
     private readonly IJwtProvider _jwtProvider;
 
     public VerifyForgotPasswordCommandHandler(
-        IAppDbContext db,
         ICacheService cache,
         IJwtProvider jwtProvider)
     {
-        _db = db;
         _cache = cache;
         _jwtProvider = jwtProvider;
     }
@@ -77,19 +73,9 @@ public class VerifyForgotPasswordCommandHandler : IRequestHandler<VerifyForgotPa
                 Error.Validation("Auth.InvalidVerificationCode", "Verification session does not match this email."));
         }
 
-        if (pendingReset.UserId is Guid userId)
-        {
-            var user = await _db.Users
-                .FirstOrDefaultAsync(u => u.Id == userId, cancellationToken);
-
-            if (user is not null)
-            {
-                user.PasswordHash = pendingReset.PasswordHash;
-                await _db.SaveChangesAsync(cancellationToken);
-            }
-        }
-
-        await _cache.RemoveAsync(cacheKey, cancellationToken);
+        pendingReset.IsCodeVerified = true;
+        pendingReset.VerificationCode = string.Empty;
+        await _cache.SetAsync(cacheKey, pendingReset, remainingLifetime, cancellationToken);
         return Result.Success();
     }
 

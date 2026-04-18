@@ -19,20 +19,17 @@ public class ForgotPasswordCommandHandler : IRequestHandler<ForgotPasswordComman
     private readonly ICacheService _cache;
     private readonly IEmailService _emailService;
     private readonly IJwtProvider _jwtProvider;
-    private readonly IPasswordHasher _passwordHasher;
 
     public ForgotPasswordCommandHandler(
         IAppDbContext db,
         ICacheService cache,
         IEmailService emailService,
-        IJwtProvider jwtProvider,
-        IPasswordHasher passwordHasher)
+        IJwtProvider jwtProvider)
     {
         _db = db;
         _cache = cache;
         _emailService = emailService;
         _jwtProvider = jwtProvider;
-        _passwordHasher = passwordHasher;
     }
 
     public async Task<Result<PendingVerificationDto>> Handle(ForgotPasswordCommand request, CancellationToken cancellationToken)
@@ -44,7 +41,6 @@ public class ForgotPasswordCommandHandler : IRequestHandler<ForgotPasswordComman
             AuthTokenTypes.PendingPasswordReset,
             expiresAt: expiresAtUtc);
         var verificationCode = GenerateVerificationCode();
-        var passwordHash = _passwordHasher.Hash(request.NewPassword);
 
         var user = await _db.Users
             .AsNoTracking()
@@ -54,10 +50,10 @@ public class ForgotPasswordCommandHandler : IRequestHandler<ForgotPasswordComman
         {
             UserId = user?.Id,
             Email = normalizedEmail,
-            PasswordHash = passwordHash,
             VerificationCode = verificationCode,
             ExpiresAtUtc = expiresAtUtc,
-            RemainingAttempts = MaxVerificationAttempts
+            RemainingAttempts = MaxVerificationAttempts,
+            IsCodeVerified = false
         };
 
         await _cache.SetAsync(
