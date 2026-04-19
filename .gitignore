@@ -248,6 +248,11 @@ orleans.codegen.cs
 # (https://github.com/github/gitignore/pull/1529#issuecomment-104372622)
 #bower_components/
 
+# Local application secrets
+/secrets/*
+!/secrets/
+!/secrets/.gitkeep
+
 # RIA/Silverlight projects
 Generated_Code/
 
@@ -361,5 +366,3 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
-# Docker secrets
-secrets/

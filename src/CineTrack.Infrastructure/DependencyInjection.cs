@@ -99,6 +99,19 @@ public static class DependencyInjection
         {
             configuration.GetSection("Smtp").Bind(smtpSettings);
             smtpSettings.Password = SecretProvider.GetSmtpPassword();
+
+            if (string.IsNullOrWhiteSpace(smtpSettings.Username) ||
+                string.Equals(smtpSettings.Username, "your-email@gmail.com", StringComparison.OrdinalIgnoreCase))
+            {
+                throw new InvalidOperationException(
+                    "Set 'Smtp:Username' in appsettings.json to the Gmail address that will send CineTrack emails.");
+            }
+
+            if (string.IsNullOrWhiteSpace(smtpSettings.FromEmail) ||
+                string.Equals(smtpSettings.FromEmail, "your-email@gmail.com", StringComparison.OrdinalIgnoreCase))
+            {
+                smtpSettings.FromEmail = smtpSettings.Username;
+            }
         });
         services.AddTransient<IEmailService, SmtpEmailService>();
 

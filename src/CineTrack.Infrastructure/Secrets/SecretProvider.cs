@@ -2,7 +2,8 @@ namespace CineTrack.Infrastructure.Secrets;
 
 public static class SecretProvider
 {
-    private const string SecretsBasePath = "/run/secrets";
+    private static readonly string SecretsBasePath = Path.GetFullPath(
+        Path.Combine(AppContext.BaseDirectory, "secrets"));
 
     public static string GetSecret(string secretName)
     {
