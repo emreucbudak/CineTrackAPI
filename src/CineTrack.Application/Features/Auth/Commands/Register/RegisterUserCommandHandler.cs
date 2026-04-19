@@ -74,7 +74,7 @@ public class RegisterUserCommandHandler : IRequestHandler<RegisterUserCommand, R
         {
             await _emailService.SendAsync(
                 normalizedEmail,
-                "CineTrack registration verification code",
+                "CineTrack | Kayıt doğrulama kodu",
                 RegisterVerificationSupport.BuildEmailBody(normalizedUsername, verificationCode, RegisterVerificationSupport.VerificationLifetime),
                 cancellationToken);
         }

@@ -70,7 +70,7 @@ public class LoginUserCommandHandler : IRequestHandler<LoginUserCommand, Result<
 
         await _emailService.SendAsync(
             user.Email,
-            "Your CineTrack login verification code",
+            "CineTrack | Giriş doğrulama kodu",
             LoginVerificationSupport.BuildVerificationEmailHtml(code),
             cancellationToken);
 

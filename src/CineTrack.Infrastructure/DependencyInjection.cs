@@ -94,26 +94,31 @@ public static class DependencyInjection
         });
         services.AddSingleton<ICacheService, RedisCacheService>();
 
-        // Email (SMTP)
-        services.Configure<SmtpSettings>(smtpSettings =>
+        // Email (Mailtrap Transactional API)
+        services.Configure<MailtrapEmailApiSettings>(mailtrapSettings =>
         {
-            configuration.GetSection("Smtp").Bind(smtpSettings);
-            smtpSettings.Password = SecretProvider.GetSmtpPassword();
+            configuration.GetSection("Mailtrap").Bind(mailtrapSettings);
+            mailtrapSettings.ApiToken = SecretProvider.GetMailtrapApiToken();
 
-            if (string.IsNullOrWhiteSpace(smtpSettings.Username) ||
-                string.Equals(smtpSettings.Username, "your-email@gmail.com", StringComparison.OrdinalIgnoreCase))
+            if (string.IsNullOrWhiteSpace(mailtrapSettings.ApiToken) ||
+                string.Equals(mailtrapSettings.ApiToken, "mailtrap-api-token", StringComparison.OrdinalIgnoreCase))
             {
                 throw new InvalidOperationException(
-                    "Set 'Smtp:Username' in appsettings.json to the Gmail address that will send CineTrack emails.");
+                    "Set the Mailtrap API token in 'secrets/mailtrap_api_token'.");
             }
 
-            if (string.IsNullOrWhiteSpace(smtpSettings.FromEmail) ||
-                string.Equals(smtpSettings.FromEmail, "your-email@gmail.com", StringComparison.OrdinalIgnoreCase))
+            if (string.IsNullOrWhiteSpace(mailtrapSettings.FromEmail) ||
+                string.Equals(
+                    mailtrapSettings.FromEmail,
+                    "noreply@your-verified-domain.com",
+                    StringComparison.OrdinalIgnoreCase) ||
+                mailtrapSettings.FromEmail.EndsWith(".local", StringComparison.OrdinalIgnoreCase))
             {
-                smtpSettings.FromEmail = smtpSettings.Username;
+                throw new InvalidOperationException(
+                    "Set 'Mailtrap:FromEmail' in appsettings.json to an address on your verified Mailtrap sending domain.");
             }
         });
-        services.AddTransient<IEmailService, SmtpEmailService>();
+        services.AddHttpClient<IEmailService, MailtrapEmailApiService>();
 
         // CAP Consumers
         services.AddTransient<EmailConsumer>();
