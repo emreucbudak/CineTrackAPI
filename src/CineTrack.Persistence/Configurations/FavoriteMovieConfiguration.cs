@@ -25,5 +25,7 @@ public class FavoriteMovieConfiguration : IEntityTypeConfiguration<FavoriteMovie
 
         builder.HasIndex(f => new { f.UserId, f.TmdbId })
             .IsUnique();
+
+        builder.HasIndex(f => new { f.UserId, f.AddedAt });
     }
 }

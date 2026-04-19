@@ -25,5 +25,7 @@ public class FollowedActorConfiguration : IEntityTypeConfiguration<FollowedActor
 
         builder.HasIndex(f => new { f.UserId, f.TmdbId })
             .IsUnique();
+
+        builder.HasIndex(f => new { f.UserId, f.FollowedAt });
     }
 }
