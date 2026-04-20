@@ -6,4 +6,7 @@
     <Project Path="src/CineTrack.Infrastructure/CineTrack.Infrastructure.csproj" />
     <Project Path="src/CineTrack.Persistence/CineTrack.Persistence.csproj" />
   </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/CineTrack.Tests/CineTrack.Tests.csproj" />
+  </Folder>
 </Solution>
