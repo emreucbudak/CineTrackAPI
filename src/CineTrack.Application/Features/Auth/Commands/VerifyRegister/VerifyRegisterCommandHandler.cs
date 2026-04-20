@@ -41,20 +41,20 @@ public class VerifyRegisterCommandHandler : IRequestHandler<VerifyRegisterComman
                 out var validationResult))
         {
             return Result.Failure<UserDto>(
-                Error.Validation("Auth.InvalidTemporaryToken", "Invalid or expired temporary registration token."));
+                Error.Validation("Auth.InvalidTemporaryToken", "Kayıt doğrulama oturumunun süresi dolmuş. Lütfen tekrar kayıt isteği oluşturun."));
         }
 
         var cacheKey = RegisterVerificationSupport.GetCacheKey(request.TemporaryToken);
         var pendingRegistration = await _cache.GetAsync<RegisterVerificationCacheEntry>(cacheKey, cancellationToken);
 
         if (pendingRegistration is null)
-            return Result.Failure<UserDto>(Error.Validation("Auth.InvalidOrExpiredVerification", "Invalid or expired verification request."));
+            return Result.Failure<UserDto>(Error.Validation("Auth.InvalidOrExpiredVerification", "Doğrulama isteğinin süresi dolmuş. Lütfen tekrar deneyin."));
 
         var remainingLifetime = pendingRegistration.ExpiresAtUtc - DateTime.UtcNow;
         if (remainingLifetime <= TimeSpan.Zero)
         {
             await RemovePendingRegistrationAsync(cacheKey, cancellationToken);
-            return Result.Failure<UserDto>(Error.Validation("Auth.InvalidOrExpiredVerification", "Invalid or expired verification request."));
+            return Result.Failure<UserDto>(Error.Validation("Auth.InvalidOrExpiredVerification", "Doğrulama isteğinin süresi dolmuş. Lütfen tekrar deneyin."));
         }
 
         if (!RegisterVerificationSupport.IsCodeMatch(request.Code, pendingRegistration.VerificationCode))
@@ -71,7 +71,7 @@ public class VerifyRegisterCommandHandler : IRequestHandler<VerifyRegisterComman
                 await _cache.SetAsync(cacheKey, pendingRegistration, remainingLifetime, cancellationToken);
             }
 
-            return Result.Failure<UserDto>(Error.Validation("Auth.InvalidVerificationCode", "Invalid verification code."));
+            return Result.Failure<UserDto>(Error.Validation("Auth.InvalidVerificationCode", "Doğrulama kodu hatalı. Lütfen e-postanızdaki 6 haneli kodu kontrol edin."));
         }
 
         if (!string.Equals(
@@ -81,7 +81,7 @@ public class VerifyRegisterCommandHandler : IRequestHandler<VerifyRegisterComman
         {
             await RemovePendingRegistrationAsync(cacheKey, cancellationToken);
             return Result.Failure<UserDto>(
-                Error.Validation("Auth.InvalidVerificationCode", "Verification session does not match this email."));
+                Error.Validation("Auth.InvalidVerificationCode", "Doğrulama oturumu bu e-posta adresiyle eşleşmiyor."));
         }
 
         var emailExists = await _db.Users
@@ -90,7 +90,7 @@ public class VerifyRegisterCommandHandler : IRequestHandler<VerifyRegisterComman
         if (emailExists)
         {
             await RemovePendingRegistrationAsync(cacheKey, cancellationToken);
-            return Result.Failure<UserDto>(Error.Conflict("User.EmailExists", "Bu email ile kayitli uye vardir."));
+            return Result.Failure<UserDto>(Error.Conflict("User.EmailExists", "Bu e-posta ile kayıtlı bir hesap var."));
         }
 
         var usernameExists = await _db.Users
@@ -99,7 +99,7 @@ public class VerifyRegisterCommandHandler : IRequestHandler<VerifyRegisterComman
         if (usernameExists)
         {
             await RemovePendingRegistrationAsync(cacheKey, cancellationToken);
-            return Result.Failure<UserDto>(Error.Conflict("User.UsernameExists", "A user with this username already exists."));
+            return Result.Failure<UserDto>(Error.Conflict("User.UsernameExists", "Bu kullanıcı adı zaten kullanılıyor."));
         }
 
         var user = new User

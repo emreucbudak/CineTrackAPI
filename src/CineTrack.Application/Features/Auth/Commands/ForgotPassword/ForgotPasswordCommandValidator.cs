@@ -7,8 +7,9 @@ public class ForgotPasswordCommandValidator : AbstractValidator<ForgotPasswordCo
     public ForgotPasswordCommandValidator()
     {
         RuleFor(x => x.Email)
-            .NotEmpty()
-            .EmailAddress()
-            .MaximumLength(256);
+            .Cascade(CascadeMode.Stop)
+            .NotEmpty().WithMessage("E-posta adresinizi girin.")
+            .EmailAddress().WithMessage("Geçerli bir e-posta adresi girin.")
+            .MaximumLength(256).WithMessage("E-posta adresi en fazla 256 karakter olabilir.");
     }
 }

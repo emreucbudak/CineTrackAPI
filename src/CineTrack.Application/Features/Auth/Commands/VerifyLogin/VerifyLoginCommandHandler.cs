@@ -31,7 +31,7 @@ public class VerifyLoginCommandHandler : IRequestHandler<VerifyLoginCommand, Res
                 out var validationResult))
         {
             return Result.Failure<AuthTokenDto>(
-                Error.Validation("Auth.InvalidTemporaryToken", "Invalid or expired temporary login token."));
+                Error.Validation("Auth.InvalidTemporaryToken", "Giriş doğrulama oturumunun süresi dolmuş. Lütfen tekrar giriş yapın."));
         }
 
         var verificationCacheKey = LoginVerificationSupport.BuildVerificationCacheKey(request.TemporaryToken);
@@ -40,7 +40,7 @@ public class VerifyLoginCommandHandler : IRequestHandler<VerifyLoginCommand, Res
         if (cacheItem is null)
         {
             return Result.Failure<AuthTokenDto>(
-                Error.Validation("Auth.InvalidVerificationSession", "Login verification session not found or expired."));
+                Error.Validation("Auth.InvalidVerificationSession", "Giriş doğrulama oturumu bulunamadı veya süresi doldu."));
         }
 
         if (cacheItem.ExpiresAt <= DateTime.UtcNow)
@@ -48,13 +48,13 @@ public class VerifyLoginCommandHandler : IRequestHandler<VerifyLoginCommand, Res
             await ClearVerificationCacheAsync(request.TemporaryToken, cacheItem.Email, cancellationToken);
 
             return Result.Failure<AuthTokenDto>(
-                Error.Validation("Auth.VerificationExpired", "The login verification code has expired."));
+                Error.Validation("Auth.VerificationExpired", "Giriş doğrulama kodunun süresi doldu. Lütfen tekrar giriş yapın."));
         }
 
         if (!LoginVerificationSupport.IsCodeMatch(request.Code.Trim(), cacheItem.Code))
         {
             return Result.Failure<AuthTokenDto>(
-                Error.Validation("Auth.InvalidVerificationCode", "Invalid verification code."));
+                Error.Validation("Auth.InvalidVerificationCode", "Doğrulama kodu hatalı. Lütfen e-postanızdaki 6 haneli kodu kontrol edin."));
         }
 
         if (!string.Equals(
@@ -66,7 +66,7 @@ public class VerifyLoginCommandHandler : IRequestHandler<VerifyLoginCommand, Res
             await ClearVerificationCacheAsync(request.TemporaryToken, cacheItem.Email, cancellationToken);
 
             return Result.Failure<AuthTokenDto>(
-                Error.Validation("Auth.InvalidVerificationSession", "Login verification session does not match the requested user."));
+                Error.Validation("Auth.InvalidVerificationSession", "Giriş doğrulama oturumu bu kullanıcıyla eşleşmiyor."));
         }
 
         await ClearVerificationCacheAsync(request.TemporaryToken, cacheItem.Email, cancellationToken);
@@ -77,7 +77,7 @@ public class VerifyLoginCommandHandler : IRequestHandler<VerifyLoginCommand, Res
         if (user is null)
         {
             return Result.Failure<AuthTokenDto>(
-                Error.Validation("Auth.UserNotFound", "User not found."));
+                Error.Validation("Auth.UserNotFound", "Kullanıcı bulunamadı."));
         }
 
         var (token, expiresAt) = _jwtProvider.GenerateToken(user);

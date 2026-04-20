@@ -7,11 +7,12 @@ public class VerifyRegisterCommandValidator : AbstractValidator<VerifyRegisterCo
     public VerifyRegisterCommandValidator()
     {
         RuleFor(x => x.TemporaryToken)
-            .NotEmpty();
+            .NotEmpty().WithMessage("Kayıt doğrulama oturumu bulunamadı. Lütfen işlemi yeniden başlatın.");
 
         RuleFor(x => x.Code)
-            .NotEmpty()
-            .Length(6)
-            .Matches("^[0-9]{6}$");
+            .Cascade(CascadeMode.Stop)
+            .NotEmpty().WithMessage("Doğrulama kodunu girin.")
+            .Length(6).WithMessage("Doğrulama kodu 6 haneli olmalıdır.")
+            .Matches("^[0-9]{6}$").WithMessage("Doğrulama kodu yalnızca rakamlardan oluşmalıdır.");
     }
 }

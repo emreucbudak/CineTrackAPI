@@ -30,20 +30,20 @@ public class VerifyForgotPasswordCommandHandler : IRequestHandler<VerifyForgotPa
         if (!validationResult.IsValid || validationResult.Payload is null)
         {
             return Result.Failure(
-                Error.Validation("Auth.InvalidTemporaryToken", "Invalid or expired password reset token."));
+                Error.Validation("Auth.InvalidTemporaryToken", "Şifre yenileme oturumunun süresi dolmuş. Lütfen işlemi yeniden başlatın."));
         }
 
         var cacheKey = GetCacheKey(request.TemporaryToken);
         var pendingReset = await _cache.GetAsync<ForgotPasswordCacheEntry>(cacheKey, cancellationToken);
 
         if (pendingReset is null)
-            return Result.Failure(Error.Validation("Auth.InvalidOrExpiredVerification", "Invalid or expired verification request."));
+            return Result.Failure(Error.Validation("Auth.InvalidOrExpiredVerification", "Doğrulama isteğinin süresi dolmuş. Lütfen tekrar deneyin."));
 
         var remainingLifetime = pendingReset.ExpiresAtUtc - DateTime.UtcNow;
         if (remainingLifetime <= TimeSpan.Zero)
         {
             await _cache.RemoveAsync(cacheKey, cancellationToken);
-            return Result.Failure(Error.Validation("Auth.InvalidOrExpiredVerification", "Invalid or expired verification request."));
+            return Result.Failure(Error.Validation("Auth.InvalidOrExpiredVerification", "Doğrulama isteğinin süresi dolmuş. Lütfen tekrar deneyin."));
         }
 
         if (!IsCodeMatch(request.Code, pendingReset.VerificationCode))
@@ -60,7 +60,7 @@ public class VerifyForgotPasswordCommandHandler : IRequestHandler<VerifyForgotPa
                 await _cache.SetAsync(cacheKey, pendingReset, remainingLifetime, cancellationToken);
             }
 
-            return Result.Failure(Error.Validation("Auth.InvalidVerificationCode", "Invalid verification code."));
+            return Result.Failure(Error.Validation("Auth.InvalidVerificationCode", "Doğrulama kodu hatalı. Lütfen e-postanızdaki 6 haneli kodu kontrol edin."));
         }
 
         if (!string.Equals(
@@ -70,7 +70,7 @@ public class VerifyForgotPasswordCommandHandler : IRequestHandler<VerifyForgotPa
         {
             await _cache.RemoveAsync(cacheKey, cancellationToken);
             return Result.Failure(
-                Error.Validation("Auth.InvalidVerificationCode", "Verification session does not match this email."));
+                Error.Validation("Auth.InvalidVerificationCode", "Doğrulama oturumu bu e-posta adresiyle eşleşmiyor."));
         }
 
         pendingReset.IsCodeVerified = true;

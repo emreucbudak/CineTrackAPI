@@ -7,22 +7,24 @@ public class RegisterUserCommandValidator : AbstractValidator<RegisterUserComman
     public RegisterUserCommandValidator()
     {
         RuleFor(x => x.Email)
-            .NotEmpty()
-            .EmailAddress()
-            .MaximumLength(256);
+            .Cascade(CascadeMode.Stop)
+            .NotEmpty().WithMessage("E-posta adresinizi girin.")
+            .EmailAddress().WithMessage("Geçerli bir e-posta adresi girin.")
+            .MaximumLength(256).WithMessage("E-posta adresi en fazla 256 karakter olabilir.");
 
         RuleFor(x => x.Username)
-            .NotEmpty()
-            .MinimumLength(3)
-            .MaximumLength(50);
+            .Cascade(CascadeMode.Stop)
+            .NotEmpty().WithMessage("Kullanıcı adınızı girin.")
+            .MinimumLength(3).WithMessage("Kullanıcı adı en az 3 karakter olmalıdır.")
+            .MaximumLength(50).WithMessage("Kullanıcı adı en fazla 50 karakter olabilir.");
 
         RuleFor(x => x.Password)
-            .NotEmpty()
-            .MinimumLength(8)
-            .MaximumLength(128)
-            .Matches("[A-Z]").WithMessage("Password must contain at least one uppercase letter.")
-            .Matches("[a-z]").WithMessage("Password must contain at least one lowercase letter.")
-            .Matches("[0-9]").WithMessage("Password must contain at least one digit.")
-            .Matches("[^a-zA-Z0-9]").WithMessage("Password must contain at least one special character.");
+            .Cascade(CascadeMode.Stop)
+            .NotEmpty().WithMessage("Şifrenizi girin.")
+            .MinimumLength(8).WithMessage("Şifre en az 8 karakter olmalıdır.")
+            .MaximumLength(128).WithMessage("Şifre en fazla 128 karakter olabilir.")
+            .Matches(@"^[\p{L}\p{Nd}]+$").WithMessage("Şifre yalnızca harf ve rakamlardan oluşmalıdır.")
+            .Matches(@"\p{L}").WithMessage("Şifre en az bir harf içermelidir.")
+            .Matches(@"\p{Nd}").WithMessage("Şifre en az bir rakam içermelidir.");
     }
 }

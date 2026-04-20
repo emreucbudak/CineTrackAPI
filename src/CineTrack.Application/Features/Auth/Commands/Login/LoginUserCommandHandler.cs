@@ -35,10 +35,10 @@ public class LoginUserCommandHandler : IRequestHandler<LoginUserCommand, Result<
             .FirstOrDefaultAsync(u => u.Email == request.Email, cancellationToken);
 
         if (user is null)
-            return Result.Failure<PendingVerificationDto>(Error.Validation("Auth.InvalidCredentials", "Invalid email or password."));
+            return Result.Failure<PendingVerificationDto>(Error.Validation("Auth.InvalidCredentials", "E-posta veya şifre hatalı."));
 
         if (!_passwordHasher.Verify(request.Password, user.PasswordHash))
-            return Result.Failure<PendingVerificationDto>(Error.Validation("Auth.InvalidCredentials", "Invalid email or password."));
+            return Result.Failure<PendingVerificationDto>(Error.Validation("Auth.InvalidCredentials", "E-posta veya şifre hatalı."));
 
         var now = DateTime.UtcNow;
         var expiresAt = now.Add(LoginVerificationSupport.VerificationCodeLifetime);

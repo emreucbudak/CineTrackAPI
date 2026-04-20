@@ -7,15 +7,15 @@ public class ResetForgotPasswordCommandValidator : AbstractValidator<ResetForgot
     public ResetForgotPasswordCommandValidator()
     {
         RuleFor(x => x.TemporaryToken)
-            .NotEmpty();
+            .NotEmpty().WithMessage("Şifre yenileme oturumu bulunamadı. Lütfen işlemi yeniden başlatın.");
 
         RuleFor(x => x.NewPassword)
-            .NotEmpty()
-            .MinimumLength(8)
-            .MaximumLength(128)
-            .Matches("[A-Z]").WithMessage("Password must contain at least one uppercase letter.")
-            .Matches("[a-z]").WithMessage("Password must contain at least one lowercase letter.")
-            .Matches("[0-9]").WithMessage("Password must contain at least one digit.")
-            .Matches("[^a-zA-Z0-9]").WithMessage("Password must contain at least one special character.");
+            .Cascade(CascadeMode.Stop)
+            .NotEmpty().WithMessage("Yeni şifrenizi girin.")
+            .MinimumLength(8).WithMessage("Şifre en az 8 karakter olmalıdır.")
+            .MaximumLength(128).WithMessage("Şifre en fazla 128 karakter olabilir.")
+            .Matches(@"^[\p{L}\p{Nd}]+$").WithMessage("Şifre yalnızca harf ve rakamlardan oluşmalıdır.")
+            .Matches(@"\p{L}").WithMessage("Şifre en az bir harf içermelidir.")
+            .Matches(@"\p{Nd}").WithMessage("Şifre en az bir rakam içermelidir.");
     }
 }

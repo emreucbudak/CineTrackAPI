@@ -53,7 +53,7 @@ public class RegisterUserCommandHandler : IRequestHandler<RegisterUserCommand, R
             if (emailAlreadyRegistered)
             {
                 return Result.Failure<PendingVerificationDto>(
-                    Error.Conflict("User.EmailExists", "Bu email ile kayitli uye vardir."));
+                    Error.Conflict("User.EmailExists", "Bu e-posta ile kayıtlı bir hesap var."));
             }
         }
 
@@ -61,13 +61,13 @@ public class RegisterUserCommandHandler : IRequestHandler<RegisterUserCommand, R
             .AnyAsync(u => u.Email == normalizedEmail, cancellationToken);
 
         if (emailExists)
-            return Result.Failure<PendingVerificationDto>(Error.Conflict("User.EmailExists", "Bu email ile kayitli uye vardir."));
+            return Result.Failure<PendingVerificationDto>(Error.Conflict("User.EmailExists", "Bu e-posta ile kayıtlı bir hesap var."));
 
         var usernameExists = await _db.Users
             .AnyAsync(u => u.Username == normalizedUsername, cancellationToken);
 
         if (usernameExists)
-            return Result.Failure<PendingVerificationDto>(Error.Conflict("User.UsernameExists", "A user with this username already exists."));
+            return Result.Failure<PendingVerificationDto>(Error.Conflict("User.UsernameExists", "Bu kullanıcı adı zaten kullanılıyor."));
 
         var expiresAtUtc = DateTime.UtcNow.Add(RegisterVerificationSupport.VerificationLifetime);
         var (temporaryToken, _) = RegisterVerificationSupport.GenerateTemporaryToken(

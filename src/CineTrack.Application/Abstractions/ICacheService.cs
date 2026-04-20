@@ -3,6 +3,8 @@ namespace CineTrack.Application.Abstractions;
 public interface ICacheService
 {
     Task<T?> GetAsync<T>(string key, CancellationToken cancellationToken = default);
+    Task<object?> GetAsync(string key, Type valueType, CancellationToken cancellationToken = default);
     Task SetAsync<T>(string key, T value, TimeSpan? expiration = null, CancellationToken cancellationToken = default);
+    Task SetAsync(string key, object value, TimeSpan? expiration = null, CancellationToken cancellationToken = default);
     Task RemoveAsync(string key, CancellationToken cancellationToken = default);
 }

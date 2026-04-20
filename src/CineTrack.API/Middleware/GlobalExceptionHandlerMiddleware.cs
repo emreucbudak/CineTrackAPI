@@ -41,11 +41,18 @@ public class GlobalExceptionHandlerMiddleware
         if (exception is ValidationException validationException)
         {
             var errors = validationException.Errors
-                .Select(e => $"{e.PropertyName}: {e.ErrorMessage}");
+                .Select(e => e.ErrorMessage)
+                .Where(message => !string.IsNullOrWhiteSpace(message))
+                .Distinct()
+                .ToArray();
+
+            var validationMessage = errors.Length == 0
+                ? "Lütfen bilgileri kontrol edip tekrar deneyin."
+                : string.Join(" ", errors);
 
             var validationResponse = ApiResponse<object>.Fail(
                 "Validation.Failed",
-                string.Join("; ", errors),
+                validationMessage,
                 (int)HttpStatusCode.BadRequest);
 
             context.Response.ContentType = "application/json";
@@ -63,13 +70,13 @@ public class GlobalExceptionHandlerMiddleware
             _ => (HttpStatusCode.InternalServerError, "Server.InternalError")
         };
 
-        var message = statusCode == HttpStatusCode.InternalServerError
-            ? "An unexpected error occurred. Please try again later."
+        var responseMessage = statusCode == HttpStatusCode.InternalServerError
+            ? "Beklenmeyen bir hata oluştu. Lütfen daha sonra tekrar deneyin."
             : exception.Message;
 
         var response = ApiResponse<object>.Fail(
             errorCode,
-            message,
+            responseMessage,
             (int)statusCode);
 
         context.Response.ContentType = "application/json";
