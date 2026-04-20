@@ -1,6 +1,7 @@
 using CineTrack.Application.Abstractions;
 using CineTrack.Application.DTOs;
 using CineTrack.Application.Events;
+using CineTrack.Application.Features.Auth.Common;
 using CineTrack.Application.Features.Auth.Commands.Register;
 using CineTrack.Domain.Entities;
 using CineTrack.Domain.Shared;
@@ -16,17 +17,20 @@ public class VerifyRegisterCommandHandler : IRequestHandler<VerifyRegisterComman
     private readonly ICacheService _cache;
     private readonly ICapPublisher _capPublisher;
     private readonly IJwtProvider _jwtProvider;
+    private readonly IRedisBloomService _redisBloomService;
 
     public VerifyRegisterCommandHandler(
         IAppDbContext db,
         ICacheService cache,
         ICapPublisher capPublisher,
-        IJwtProvider jwtProvider)
+        IJwtProvider jwtProvider,
+        IRedisBloomService redisBloomService)
     {
         _db = db;
         _cache = cache;
         _capPublisher = capPublisher;
         _jwtProvider = jwtProvider;
+        _redisBloomService = redisBloomService;
     }
 
     public async Task<Result<UserDto>> Handle(VerifyRegisterCommand request, CancellationToken cancellationToken)
@@ -86,7 +90,7 @@ public class VerifyRegisterCommandHandler : IRequestHandler<VerifyRegisterComman
         if (emailExists)
         {
             await RemovePendingRegistrationAsync(cacheKey, cancellationToken);
-            return Result.Failure<UserDto>(Error.Conflict("User.EmailExists", "A user with this email already exists."));
+            return Result.Failure<UserDto>(Error.Conflict("User.EmailExists", "Bu email ile kayitli uye vardir."));
         }
 
         var usernameExists = await _db.Users
@@ -115,9 +119,36 @@ public class VerifyRegisterCommandHandler : IRequestHandler<VerifyRegisterComman
             cancellationToken: cancellationToken);
 
         await _db.SaveChangesAsync(cancellationToken);
+        await AddUserBloomEntriesAsync(user, pendingRegistration.PasswordFingerprint, cancellationToken);
         await RemovePendingRegistrationAsync(cacheKey, cancellationToken);
 
         return new UserDto(user.Id, user.Email, user.Username, user.CreatedAt);
+    }
+
+    private async Task AddUserBloomEntriesAsync(
+        User user,
+        string passwordFingerprint,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            await _redisBloomService.AddAsync(
+                AuthBloomFilterKeys.RegisteredEmails,
+                user.Email,
+                cancellationToken);
+
+            if (!string.IsNullOrWhiteSpace(passwordFingerprint))
+            {
+                await _redisBloomService.AddAsync(
+                    AuthBloomFilterKeys.PasswordHistory(user.Id),
+                    passwordFingerprint,
+                    cancellationToken);
+            }
+        }
+        catch
+        {
+            // Best-effort optimization; the database remains authoritative.
+        }
     }
 
     private async Task RemovePendingRegistrationAsync(string cacheKey, CancellationToken cancellationToken)

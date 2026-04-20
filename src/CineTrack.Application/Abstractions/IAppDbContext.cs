@@ -8,6 +8,7 @@ public interface IAppDbContext
     DbSet<User> Users { get; }
     DbSet<FavoriteMovie> FavoriteMovies { get; }
     DbSet<FollowedActor> FollowedActors { get; }
+    DbSet<PasswordHistory> PasswordHistories { get; }
     DbSet<RefreshToken> RefreshTokens { get; }
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }

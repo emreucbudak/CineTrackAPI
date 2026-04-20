@@ -14,6 +14,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.IdentityModel.Tokens;
 using Polly;
 using Polly.Extensions.Http;
+using StackExchange.Redis;
 
 namespace CineTrack.Infrastructure;
 
@@ -49,6 +50,7 @@ public static class DependencyInjection
 
         // Auth
         services.AddScoped<IPasswordHasher, PasswordHasher>();
+        services.AddSingleton<IPasswordFingerprintService, PasswordFingerprintService>();
         services.AddSingleton<IJwtProvider, JwtProvider>();
 
         services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
@@ -92,7 +94,10 @@ public static class DependencyInjection
             options.Configuration = redisConnectionString;
             options.InstanceName = "CineTrack:";
         });
+        services.AddSingleton<IConnectionMultiplexer>(_ =>
+            ConnectionMultiplexer.Connect(redisConnectionString));
         services.AddSingleton<ICacheService, RedisCacheService>();
+        services.AddSingleton<IRedisBloomService, RedisBloomService>();
 
         // Email (Gmail SMTP)
         services.Configure<SmtpSettings>(smtpSettings =>

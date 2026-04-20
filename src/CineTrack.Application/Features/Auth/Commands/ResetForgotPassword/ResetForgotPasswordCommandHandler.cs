@@ -1,6 +1,7 @@
 using CineTrack.Application.Abstractions;
 using CineTrack.Application.Features.Auth.Commands.ForgotPassword;
 using CineTrack.Application.Features.Auth.Common;
+using CineTrack.Domain.Entities;
 using CineTrack.Domain.Shared;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
@@ -12,18 +13,24 @@ public class ResetForgotPasswordCommandHandler : IRequestHandler<ResetForgotPass
     private readonly IAppDbContext _db;
     private readonly ICacheService _cache;
     private readonly IJwtProvider _jwtProvider;
+    private readonly IPasswordFingerprintService _passwordFingerprintService;
     private readonly IPasswordHasher _passwordHasher;
+    private readonly IRedisBloomService _redisBloomService;
 
     public ResetForgotPasswordCommandHandler(
         IAppDbContext db,
         ICacheService cache,
         IJwtProvider jwtProvider,
-        IPasswordHasher passwordHasher)
+        IPasswordHasher passwordHasher,
+        IPasswordFingerprintService passwordFingerprintService,
+        IRedisBloomService redisBloomService)
     {
         _db = db;
         _cache = cache;
         _jwtProvider = jwtProvider;
         _passwordHasher = passwordHasher;
+        _passwordFingerprintService = passwordFingerprintService;
+        _redisBloomService = redisBloomService;
     }
 
     public async Task<Result> Handle(ResetForgotPasswordCommand request, CancellationToken cancellationToken)
@@ -73,8 +80,67 @@ public class ResetForgotPasswordCommandHandler : IRequestHandler<ResetForgotPass
 
             if (user is not null)
             {
+                if (_passwordHasher.Verify(request.NewPassword, user.PasswordHash))
+                {
+                    return Result.Failure(
+                        Error.Validation(
+                            "Auth.PasswordReuseNotAllowed",
+                            "New password cannot match your current password or your last 3 previous passwords."));
+                }
+
+                var bloomKey = AuthBloomFilterKeys.PasswordHistory(user.Id);
+                var newPasswordFingerprint = _passwordFingerprintService.CreateFingerprint(request.NewPassword);
+                var shouldVerifyRecentPasswords = await _redisBloomService.ExistsAsync(
+                    bloomKey,
+                    newPasswordFingerprint,
+                    cancellationToken);
+
+                var recentPasswordHistories = await _db.PasswordHistories
+                    .Where(x => x.UserId == user.Id)
+                    .OrderByDescending(x => x.Id)
+                    .ToListAsync(cancellationToken);
+
+                if (shouldVerifyRecentPasswords || recentPasswordHistories.Count > 0)
+                {
+                    var matchesRecentPassword = recentPasswordHistories
+                        .Take(3)
+                        .Any(x => _passwordHasher.Verify(request.NewPassword, x.PreviousPasswordHash));
+
+                    if (matchesRecentPassword)
+                    {
+                        return Result.Failure(
+                            Error.Validation(
+                                "Auth.PasswordReuseNotAllowed",
+                                "New password cannot match your current password or your last 3 previous passwords."));
+                    }
+                }
+
+                _db.PasswordHistories.Add(new PasswordHistory
+                {
+                    UserId = user.Id,
+                    PreviousPasswordHash = user.PasswordHash
+                });
+
+                var passwordHistoriesToRemove = recentPasswordHistories
+                    .Skip(2)
+                    .ToList();
+
+                if (passwordHistoriesToRemove.Count > 0)
+                {
+                    _db.PasswordHistories.RemoveRange(passwordHistoriesToRemove);
+                }
+
                 user.PasswordHash = _passwordHasher.Hash(request.NewPassword);
                 await _db.SaveChangesAsync(cancellationToken);
+
+                try
+                {
+                    await _redisBloomService.AddAsync(bloomKey, newPasswordFingerprint, cancellationToken);
+                }
+                catch
+                {
+                    // Best-effort optimization; password history table remains authoritative.
+                }
             }
         }
 
