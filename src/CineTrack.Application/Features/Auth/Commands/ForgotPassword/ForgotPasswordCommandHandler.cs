@@ -13,7 +13,7 @@ public class ForgotPasswordCommandHandler : IRequestHandler<ForgotPasswordComman
 {
     private const int VerificationCodeLength = 6;
     private const int MaxVerificationAttempts = 5;
-    private static readonly TimeSpan VerificationLifetime = TimeSpan.FromMinutes(10);
+    private static readonly TimeSpan VerificationLifetime = TimeSpan.FromMinutes(5);
 
     private readonly IAppDbContext _db;
     private readonly ICacheService _cache;
@@ -97,20 +97,20 @@ public class ForgotPasswordCommandHandler : IRequestHandler<ForgotPasswordComman
                     <div style="max-width:560px; margin:0 auto; background:#171821; border:1px solid #2b2d3a; border-radius:18px; overflow:hidden;">
                       <div style="padding:24px 24px 8px;">
                         <div style="display:inline-block; padding:6px 12px; border-radius:999px; background:#2d161a; color:#ff9d9d; font-size:12px; font-weight:700; letter-spacing:0.6px;">
-                          SIFRE SIFIRLAMA
+                          ŞİFRE SIFIRLAMA
                         </div>
-                        <h2 style="margin:16px 0 10px; font-size:28px; color:#ffffff;">Sifre sifirlama kodunuz</h2>
+                        <h2 style="margin:16px 0 10px; font-size:28px; color:#ffffff;">Şifre sıfırlama kodunuz</h2>
                         <p style="margin:0 0 18px; color:#b7bccd; line-height:1.6;">
-                          Sifrenizi yenilemek icin asagidaki 6 haneli kodu kullanin.
+                          Şifrenizi yenilemek için aşağıdaki 6 haneli kodu kullanın.
                         </p>
                       </div>
                       <div style="padding:0 24px 24px;">
                         <div style="padding:18px 20px; border-radius:16px; background:#10111a; border:1px solid #2f3242; text-align:center;">
-                          <div style="font-size:13px; color:#8f96ad; margin-bottom:8px;">Sifre sifirlama kodu</div>
+                          <div style="font-size:13px; color:#8f96ad; margin-bottom:8px;">Şifre sıfırlama kodu</div>
                           <div style="font-size:34px; font-weight:800; letter-spacing:8px; color:#ffffff;">{verificationCode}</div>
                         </div>
                         <p style="margin:18px 0 8px; color:#b7bccd; line-height:1.6;">
-                          Kod {totalMinutes} dakika boyunca gecerlidir. Bu talep size ait degilse hesabiniz icin herhangi bir degisiklik yapilmaz.
+                          Kod {totalMinutes} dakika boyunca geçerlidir. Bu talep size ait değilse hesabınız için herhangi bir değişiklik yapılmaz.
                         </p>
                       </div>
                     </div>

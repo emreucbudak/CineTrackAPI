@@ -16,7 +16,7 @@ internal sealed record PendingLoginVerificationCacheItem(
 
 internal static class LoginVerificationSupport
 {
-    internal static readonly TimeSpan VerificationCodeLifetime = TimeSpan.FromMinutes(10);
+    internal static readonly TimeSpan VerificationCodeLifetime = TimeSpan.FromMinutes(5);
 
     internal static string BuildVerificationCacheKey(string temporaryToken) =>
         $"auth:login:verification:{temporaryToken}";
@@ -38,20 +38,20 @@ internal static class LoginVerificationSupport
                     <div style="max-width:560px; margin:0 auto; background:#171821; border:1px solid #2b2d3a; border-radius:18px; overflow:hidden;">
                       <div style="padding:24px 24px 8px;">
                         <div style="display:inline-block; padding:6px 12px; border-radius:999px; background:#2a1d11; color:#f4c06b; font-size:12px; font-weight:700; letter-spacing:0.6px;">
-                          GIRIS DOGRULAMA
+                          GİRİŞ DOĞRULAMA
                         </div>
-                        <h2 style="margin:16px 0 10px; font-size:28px; color:#ffffff;">CineTrack giris kodunuz hazir</h2>
+                        <h2 style="margin:16px 0 10px; font-size:28px; color:#ffffff;">CineTrack giriş kodunuz hazır</h2>
                         <p style="margin:0 0 18px; color:#b7bccd; line-height:1.6;">
-                          Hesabiniza girisi tamamlamak icin asagidaki 6 haneli kodu kullanin.
+                          Hesabınıza girişi tamamlamak için aşağıdaki 6 haneli kodu kullanın.
                         </p>
                       </div>
                       <div style="padding:0 24px 24px;">
                         <div style="padding:18px 20px; border-radius:16px; background:#10111a; border:1px solid #2f3242; text-align:center;">
-                          <div style="font-size:13px; color:#8f96ad; margin-bottom:8px;">Tek kullanimlik giris kodu</div>
+                          <div style="font-size:13px; color:#8f96ad; margin-bottom:8px;">Tek kullanımlık giriş kodu</div>
                           <div style="font-size:34px; font-weight:800; letter-spacing:8px; color:#ffffff;">{code}</div>
                         </div>
                         <p style="margin:18px 0 8px; color:#b7bccd; line-height:1.6;">
-                          Kod {expiresInMinutes} dakika boyunca gecerlidir. Bu giris islemi size ait degilse bu e-postayi yok sayabilirsiniz.
+                          Kod {expiresInMinutes} dakika boyunca geçerlidir. Bu giriş işlemi size ait değilse bu e-postayı yok sayabilirsiniz.
                         </p>
                       </div>
                     </div>

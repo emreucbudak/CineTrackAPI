@@ -42,19 +42,19 @@ public class ResetForgotPasswordCommandHandler : IRequestHandler<ResetForgotPass
         if (!validationResult.IsValid || validationResult.Payload is null)
         {
             return Result.Failure(
-                Error.Validation("Auth.InvalidTemporaryToken", "Invalid or expired password reset token."));
+                Error.Validation("Auth.InvalidTemporaryToken", "Şifre yenileme oturumunun süresi dolmuş. Lütfen işlemi yeniden başlatın."));
         }
 
         var cacheKey = GetCacheKey(request.TemporaryToken);
         var pendingReset = await _cache.GetAsync<ForgotPasswordCacheEntry>(cacheKey, cancellationToken);
 
         if (pendingReset is null)
-            return Result.Failure(Error.Validation("Auth.InvalidOrExpiredVerification", "Invalid or expired verification request."));
+            return Result.Failure(Error.Validation("Auth.InvalidOrExpiredVerification", "Doğrulama isteğinin süresi dolmuş. Lütfen tekrar deneyin."));
 
         if (!pendingReset.IsCodeVerified)
         {
             return Result.Failure(
-                Error.Validation("Auth.VerificationRequired", "Verification code must be confirmed before resetting the password."));
+                Error.Validation("Auth.VerificationRequired", "Şifrenizi değiştirmeden önce doğrulama kodunu onaylamalısınız."));
         }
 
         if (!string.Equals(
@@ -64,13 +64,13 @@ public class ResetForgotPasswordCommandHandler : IRequestHandler<ResetForgotPass
         {
             await _cache.RemoveAsync(cacheKey, cancellationToken);
             return Result.Failure(
-                Error.Validation("Auth.InvalidVerificationCode", "Verification session does not match this email."));
+                Error.Validation("Auth.InvalidVerificationCode", "Doğrulama oturumu bu e-posta adresiyle eşleşmiyor."));
         }
 
         if (pendingReset.ExpiresAtUtc <= DateTime.UtcNow)
         {
             await _cache.RemoveAsync(cacheKey, cancellationToken);
-            return Result.Failure(Error.Validation("Auth.InvalidOrExpiredVerification", "Invalid or expired verification request."));
+            return Result.Failure(Error.Validation("Auth.InvalidOrExpiredVerification", "Doğrulama isteğinin süresi dolmuş. Lütfen tekrar deneyin."));
         }
 
         if (pendingReset.UserId is Guid userId)
@@ -85,7 +85,7 @@ public class ResetForgotPasswordCommandHandler : IRequestHandler<ResetForgotPass
                     return Result.Failure(
                         Error.Validation(
                             "Auth.PasswordReuseNotAllowed",
-                            "New password cannot match your current password or your last 3 previous passwords."));
+                            "Yeni şifreniz mevcut şifrenizle veya son 3 eski şifrenizle aynı olamaz."));
                 }
 
                 var bloomKey = AuthBloomFilterKeys.PasswordHistory(user.Id);
@@ -111,7 +111,7 @@ public class ResetForgotPasswordCommandHandler : IRequestHandler<ResetForgotPass
                         return Result.Failure(
                             Error.Validation(
                                 "Auth.PasswordReuseNotAllowed",
-                                "New password cannot match your current password or your last 3 previous passwords."));
+                                "Yeni şifreniz mevcut şifrenizle veya son 3 eski şifrenizle aynı olamaz."));
                     }
                 }
 

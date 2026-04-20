@@ -94,7 +94,7 @@ public class AuthController : ControllerBase
 
         return Ok(ApiResponse<object>.Ok(new
         {
-            message = "Password reset code verified successfully."
+            message = "Şifre yenileme kodu doğrulandı."
         }));
     }
 
@@ -108,7 +108,7 @@ public class AuthController : ControllerBase
 
         return Ok(ApiResponse<object>.Ok(new
         {
-            message = "Password reset completed successfully."
+            message = "Şifreniz başarıyla güncellendi."
         }));
     }
 
