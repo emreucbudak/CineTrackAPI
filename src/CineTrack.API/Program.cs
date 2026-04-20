@@ -50,17 +50,19 @@ try
     {
         options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
         options.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(context =>
-            RateLimitPartition.GetFixedWindowLimiter(
+            RateLimitPartition.GetSlidingWindowLimiter(
                 context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
-                _ => new FixedWindowRateLimiterOptions
+                _ => new SlidingWindowRateLimiterOptions
                 {
-                    PermitLimit = 100,
-                    Window = TimeSpan.FromMinutes(1)
+                    PermitLimit = 50,
+                    Window = TimeSpan.FromMinutes(1),
+                    SegmentsPerWindow = 6
                 }));
-        options.AddFixedWindowLimiter("auth", limiterOptions =>
+        options.AddSlidingWindowLimiter("auth", limiterOptions =>
         {
-            limiterOptions.PermitLimit = 10;
+            limiterOptions.PermitLimit = 5;
             limiterOptions.Window = TimeSpan.FromMinutes(1);
+            limiterOptions.SegmentsPerWindow = 6;
         });
     });
 
