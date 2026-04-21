@@ -1,9 +1,7 @@
 using CineTrack.Application.Abstractions;
 using CineTrack.Application.DTOs;
-using CineTrack.Application.Events;
 using CineTrack.Domain.Entities;
 using CineTrack.Domain.Shared;
-using DotNetCore.CAP;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 
@@ -12,12 +10,10 @@ namespace CineTrack.Application.Features.Actors.Commands.Follow;
 public class FollowActorCommandHandler : IRequestHandler<FollowActorCommand, Result<FollowedActorDto>>
 {
     private readonly IAppDbContext _db;
-    private readonly ICapPublisher _capPublisher;
 
-    public FollowActorCommandHandler(IAppDbContext db, ICapPublisher capPublisher)
+    public FollowActorCommandHandler(IAppDbContext db)
     {
         _db = db;
-        _capPublisher = capPublisher;
     }
 
     public async Task<Result<FollowedActorDto>> Handle(FollowActorCommand request, CancellationToken cancellationToken)
@@ -39,11 +35,6 @@ public class FollowActorCommandHandler : IRequestHandler<FollowActorCommand, Res
         };
 
         _db.FollowedActors.Add(followed);
-
-        await _capPublisher.PublishAsync(
-            EventNames.ActorFollowed,
-            new ActorFollowedEvent(request.UserId, request.TmdbId, request.Name, followed.FollowedAt),
-            cancellationToken: cancellationToken);
 
         await _db.SaveChangesAsync(cancellationToken);
 

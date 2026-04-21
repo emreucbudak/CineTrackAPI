@@ -1,9 +1,7 @@
 using CineTrack.Application.Abstractions;
 using CineTrack.Application.DTOs;
-using CineTrack.Application.Events;
 using CineTrack.Domain.Entities;
 using CineTrack.Domain.Shared;
-using DotNetCore.CAP;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 
@@ -12,12 +10,10 @@ namespace CineTrack.Application.Features.Movies.Commands.AddFavorite;
 public class AddFavoriteMovieCommandHandler : IRequestHandler<AddFavoriteMovieCommand, Result<FavoriteMovieDto>>
 {
     private readonly IAppDbContext _db;
-    private readonly ICapPublisher _capPublisher;
 
-    public AddFavoriteMovieCommandHandler(IAppDbContext db, ICapPublisher capPublisher)
+    public AddFavoriteMovieCommandHandler(IAppDbContext db)
     {
         _db = db;
-        _capPublisher = capPublisher;
     }
 
     public async Task<Result<FavoriteMovieDto>> Handle(AddFavoriteMovieCommand request, CancellationToken cancellationToken)
@@ -39,11 +35,6 @@ public class AddFavoriteMovieCommandHandler : IRequestHandler<AddFavoriteMovieCo
         };
 
         _db.FavoriteMovies.Add(favorite);
-
-        await _capPublisher.PublishAsync(
-            EventNames.MovieFavorited,
-            new MovieFavoritedEvent(request.UserId, request.TmdbId, request.Title, favorite.AddedAt),
-            cancellationToken: cancellationToken);
 
         await _db.SaveChangesAsync(cancellationToken);
 
